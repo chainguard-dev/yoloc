@@ -73,9 +73,13 @@ func main() {
 		Github: strings.Replace(*repoFlag, "https://github.com/", "", 1),
 		Image:  *imageFlag,
 	}
+
+	fmt.Printf("Analyzing %+v\n", cf)
+
 	checkers := []Checker{
 		CheckRoot,
 		CheckSBOM,
+		CheckSignedImage,
 	}
 	ctx := context.Background()
 	score := 0
@@ -83,8 +87,10 @@ func main() {
 
 	for _, c := range checkers {
 		r, err := c(ctx, cf)
-		score += r.Score
-		maxScore += r.Max
+		if r != nil {
+			score += r.Score
+			maxScore += r.Max
+		}
 		n := fname(c)
 
 		//fmt.Printf("%s: %+v\n", n, r)
@@ -103,7 +109,11 @@ func main() {
 		}
 	}
 
-	perc := int((float64(score) / float64(maxScore)) * 100)
+	perc := 0
+	if score > 0 {
+		perc = int((float64(score) / float64(maxScore)) * 100)
+	}
+
 	fmt.Printf("\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
 	stance(perc)
 	os.Exit(perc)
