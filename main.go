@@ -80,6 +80,7 @@ func main() {
 		CheckRoot,
 		CheckSBOM,
 		CheckSignedImage,
+		CheckReleaser,
 	}
 	ctx := context.Background()
 	score := 0

@@ -62,7 +62,7 @@ func CheckSBOM(_ context.Context, c *Config) (*Result, error) {
 		r.Score = r.Score - 4
 	}
 
-	ok, err = pageRE(fmt.Sprintf("https://github.com/%s", c.Github), ("(?i)sbom|spdx"))
+	ok, err = pageRE(fmt.Sprintf("https://github.com/%s/releases", c.Github), ("(?i)sbom|spdx"))
 	if err != nil {
 		return nil, fmt.Errorf("page: %w", err)
 	}
@@ -124,5 +124,77 @@ func CheckSignedImage(_ context.Context, c *Config) (*Result, error) {
 		r.Msg = fmt.Sprintf("Found %d verified signatures", len(vs))
 	}
 
+	return r, nil
+}
+
+func CheckApprovers(_ context.Context, c *Config) (*Result, error) {
+	max := 10
+	r := &Result{
+		Score: max,
+		Max:   max,
+		Msg:   "100% of commits have 0 approvers",
+	}
+	return r, nil
+}
+
+func CheckPrivateKeys(_ context.Context, c *Config) (*Result, error) {
+	max := 10
+	r := &Result{
+		Score: max,
+		Max:   max,
+		Msg:   "Found 1 things that look like private keys",
+	}
+	return r, nil
+}
+
+func CheckDependencies(_ context.Context, c *Config) (*Result, error) {
+	max := 10
+	r := &Result{
+		Score: max,
+		Max:   max,
+		Msg:   "Found 1 things that look like private keys",
+	}
+	return r, nil
+}
+
+func CheckReproducibleBuild(_ context.Context, c *Config) (*Result, error) {
+	max := 10
+	r := &Result{
+		Score: max,
+		Max:   max,
+		Msg:   "Found 1 things that look like private keys",
+	}
+	return r, nil
+}
+
+func CheckReleaser(_ context.Context, c *Config) (*Result, error) {
+	url := fmt.Sprintf("https://github.com/%s/releases", c.Github)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("get: %w", err)
+	}
+	defer resp.Body.Close()
+	bs, err := ioutil.ReadAll(resp.Body)
+
+	matches := regexp.MustCompile(`data-hovercard-url="/users/(.*?)/hovercard`).FindStringSubmatch(string(bs))
+	if len(matches) == 0 {
+		return &Result{Score: 10, Max: 10, Msg: fmt.Sprintf("No releases found. Great work!")}, nil
+	}
+
+	user := matches[1]
+	if regexp.MustCompile("bot|action|release|jenkins|auto").MatchString(user) {
+		return &Result{Score: 0, Max: 10, Msg: fmt.Sprintf("Previous release was created by automation (%q)", user)}, nil
+	}
+
+	return &Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (not automated)", user)}, nil
+}
+
+func CheckArtifactSignatures(_ context.Context, c *Config) (*Result, error) {
+	max := 10
+	r := &Result{
+		Score: max,
+		Max:   max,
+		Msg:   "Found 1 things that look like private keys",
+	}
 	return r, nil
 }
