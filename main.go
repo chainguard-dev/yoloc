@@ -11,6 +11,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/shurcooL/githubv4"
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -58,6 +60,23 @@ func stance(perc int) {
 	}
 }
 
+func printResult(n string, r *Result, err error) {
+	switch {
+	case err != nil:
+		checkBox(erS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s failed: %v", n, err))
+	case r.Score == r.Max: // They really YOLO
+		checkBox(suS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+	case r.Score == 0: // Too good
+		checkBox(faS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+	case r.Score > 0:
+		checkBox(paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+	default:
+		checkBox(paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+
+	}
+
+}
+
 func main() {
 	flag.Parse()
 
@@ -69,22 +88,35 @@ func main() {
 
 `))
 
+	repo := strings.Replace(*repoFlag, "https://github.com/", "", 1)
+	parts := strings.Split(repo, "/")
+
 	cf := &Config{
-		Github: strings.Replace(*repoFlag, "https://github.com/", "", 1),
+		Github: repo,
+		Owner:  parts[0],
+		Name:   parts[1],
 		Image:  *imageFlag,
 	}
 
 	fmt.Printf("Analyzing %+v\n", cf)
 
 	checkers := []Checker{
-		CheckRoot,
-		CheckSBOM,
-		CheckSignedImage,
-		CheckReleaser,
+		CheckCommits,
+		/*	CheckRoot,
+			CheckSBOM,
+			CheckSignedImage,
+			CheckReleaser,*/
 	}
 	ctx := context.Background()
 	score := 0
 	maxScore := 0
+
+	// authentication procedures
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	cf.V4Client = githubv4.NewClient(httpClient)
 
 	for _, c := range checkers {
 		r, err := c(ctx, cf)
@@ -93,21 +125,7 @@ func main() {
 			maxScore += r.Max
 		}
 		n := fname(c)
-
-		//fmt.Printf("%s: %+v\n", n, r)
-		switch {
-		case err != nil:
-			checkBox(erS, "‽", fmt.Sprintf("%s failed: %v", n, err))
-		case r.Score == r.Max: // They really YOLO
-			checkBox(suS, "✓", fmt.Sprintf("%s: %s", n, r.Msg))
-		case r.Score == 0: // Too good
-			checkBox(faS, "𐄂", fmt.Sprintf("%s: %s", n, r.Msg))
-		case r.Score > 0:
-			checkBox(paS, "-", fmt.Sprintf("%s: %s", n, r.Msg))
-		default:
-			checkBox(paS, "?", fmt.Sprintf("%s: %s", n, r.Msg))
-
-		}
+		printResult(n, r, err)
 	}
 
 	perc := 0

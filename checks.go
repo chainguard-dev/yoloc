@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/shurcooL/githubv4"
 	"github.com/sigstore/cosign/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/pkg/cosign"
 	ociremote "github.com/sigstore/cosign/pkg/oci/remote"
@@ -17,8 +19,11 @@ import (
 )
 
 type Config struct {
-	Github string
-	Image  string
+	Github   string
+	Image    string
+	V4Client *githubv4.Client
+	Owner    string
+	Name     string
 }
 
 type Result struct {
@@ -127,12 +132,54 @@ func CheckSignedImage(_ context.Context, c *Config) (*Result, error) {
 	return r, nil
 }
 
-func CheckApprovers(_ context.Context, c *Config) (*Result, error) {
+func CheckCommits(_ context.Context, c *Config) (*Result, error) {
 	max := 10
 	r := &Result{
 		Score: max,
 		Max:   max,
-		Msg:   "100% of commits have 0 approvers",
+	}
+
+	signed := 0
+	approved := 0
+	commits := 0
+
+	cs, err := Commits(c.V4Client, c.Owner, c.Name, "main")
+	if err != nil {
+		return nil, fmt.Errorf("unable to get commits: %w", err)
+	}
+
+	if len(cs) == 0 {
+		cs, err = Commits(c.V4Client, c.Owner, c.Name, "master")
+		if err != nil {
+			return nil, fmt.Errorf("unable to get commits: %w", err)
+		}
+	}
+
+	for _, co := range cs {
+		commits++
+		if co.Signed {
+			signed++
+		}
+		if co.Approved {
+			approved++
+		}
+	}
+
+	if signed > 0 {
+		percSigned := (float64(signed) / float64(commits))
+		r.Score = r.Score - int(math.Ceil(5*percSigned))
+		r.Msg = fmt.Sprintf("%.1f%% of the last %d commits were signed. ", percSigned*100, len(cs))
+	}
+
+	if signed > 0 {
+		percApproved := (float64(approved) / float64(commits))
+		r.Score = r.Score - int(math.Ceil(5*percApproved))
+		r.Msg = r.Msg + fmt.Sprintf("%.1f%% of the last %d commits were approved.", percApproved*100, len(cs))
+	}
+
+	if r.Msg == "" {
+		r.Msg = "No reviewers or signed commits found"
+
 	}
 	return r, nil
 }
