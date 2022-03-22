@@ -63,7 +63,7 @@ func stance(perc int) {
 func printResult(n string, r *Result, err error) {
 	switch {
 	case err != nil:
-		checkBox(erS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s failed: %v", n, err))
+		checkBox(erS, "error", fmt.Sprintf("%s failed: %v", n, err))
 	case r.Score == r.Max: // They really YOLO
 		checkBox(suS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
 	case r.Score == 0: // Too good
@@ -102,10 +102,10 @@ func main() {
 
 	checkers := []Checker{
 		CheckCommits,
-		/*	CheckRoot,
-			CheckSBOM,
-			CheckSignedImage,
-			CheckReleaser,*/
+		CheckRoot,
+		CheckSBOM,
+		CheckSignedImage,
+		CheckReleaser,
 	}
 	ctx := context.Background()
 	score := 0
