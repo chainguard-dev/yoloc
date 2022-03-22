@@ -2,13 +2,21 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
+	"reflect"
+	"runtime"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/common-nighthawk/go-figure"
 )
 
 var (
+	repoFlag  = flag.String("repo", "google/triage-party", "Github repo to check")
+	imageFlag = flag.String("image", "", "image to chec")
+
 	ckS = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
 	suS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00FF00"))
 	erS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0000"))
@@ -16,24 +24,7 @@ var (
 	paS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFFF00"))
 )
 
-type Result struct {
-	Score int
-	Max   int
-	Msg   string
-}
-
-type Config struct {
-}
-
 type Checker func(context.Context, *Config) (*Result, error)
-
-func CheckRoot(_ context.Context, _ *Config) (*Result, error) {
-	max := 10
-	if euid := os.Geteuid(); euid > 0 {
-		return &Result{Score: 0, Max: max, Msg: fmt.Sprintf("effective euid is %d, not 0", euid)}, nil
-	}
-	return &Result{Score: max, Max: max, Msg: "I AM GROOT"}, nil
-}
 
 func out(s lipgloss.Style, msg string, args ...interface{}) {
 	fmt.Printf(s.Render(fmt.Sprintf(msg, args...)))
@@ -47,11 +38,44 @@ func checkBox(s lipgloss.Style, mark string, msg string) {
 			s.Render(msg))
 }
 
-func main() {
+func fname(i interface{}) string {
+	return strings.Replace(runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name(), "main.", "", 1)
+}
 
-	cf := &Config{}
+func stance(perc int) {
+	fmt.Printf("Your YOLO stance:\n\n")
+
+	switch {
+	case perc == 0:
+		figure.NewFigure("Dr. Fauci", "", true).Print()
+		fmt.Println("\nMeasured safety. YOLO FAIL!")
+	case perc > 0:
+		figure.NewFigure("Allan Pollock", "", true).Print()
+		fmt.Println("\nBorrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale")
+	case perc == 100:
+		figure.NewFigure("LeeRoy Jenkins", "", true).Print()
+		fmt.Println("")
+	}
+}
+
+func main() {
+	flag.Parse()
+
+	fmt.Println(suS.Render(`
+             |
+   |  |  _ \ |  _ \  _|
+  \_, |\___/_|\___/\__|        v0.0-main
+  ___/
+
+`))
+
+	cf := &Config{
+		Github: strings.Replace(*repoFlag, "https://github.com/", "", 1),
+		Image:  *imageFlag,
+	}
 	checkers := []Checker{
 		CheckRoot,
+		CheckSBOM,
 	}
 	ctx := context.Background()
 	score := 0
@@ -61,20 +85,26 @@ func main() {
 		r, err := c(ctx, cf)
 		score += r.Score
 		maxScore += r.Max
+		n := fname(c)
 
+		//fmt.Printf("%s: %+v\n", n, r)
 		switch {
 		case err != nil:
-			checkBox(erS, "🚫", fmt.Sprintf("check %v failed: %v", c, err))
-		case r.Score == r.Max:
-			checkBox(suS, "🚫", r.Msg)
-		case r.Score == 0:
-			checkBox(faS, "🚫", r.Msg)
-		case r.Score == 0:
-			checkBox(paS, "🚫", r.Msg)
+			checkBox(erS, "‽", fmt.Sprintf("%s failed: %v", n, err))
+		case r.Score == r.Max: // They really YOLO
+			checkBox(suS, "✓", fmt.Sprintf("%s: %s", n, r.Msg))
+		case r.Score == 0: // Too good
+			checkBox(faS, "𐄂", fmt.Sprintf("%s: %s", n, r.Msg))
+		case r.Score > 0:
+			checkBox(paS, "-", fmt.Sprintf("%s: %s", n, r.Msg))
+		default:
+			checkBox(paS, "?", fmt.Sprintf("%s: %s", n, r.Msg))
+
 		}
 	}
 
-	perc := int(score/maxScore) * 100
+	perc := int((float64(score) / float64(maxScore)) * 100)
 	fmt.Printf("\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
+	stance(perc)
 	os.Exit(perc)
 }

@@ -2,7 +2,10 @@ module github.com/chainguard-dev/yoloc
 
 go 1.18
 
-require github.com/charmbracelet/lipgloss v0.5.0
+require (
+	github.com/charmbracelet/lipgloss v0.5.0
+	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
+)
 
 require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
