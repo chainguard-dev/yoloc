@@ -17,7 +17,7 @@ import (
 
 var (
 	repoFlag  = flag.String("repo", "google/triage-party", "Github repo to check")
-	imageFlag = flag.String("image", "", "image to chec")
+	imageFlag = flag.String("image", "", "image to check")
 
 	ckS = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
 	suS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00FF00"))
