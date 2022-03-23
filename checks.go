@@ -223,7 +223,7 @@ func CheckReleaser(_ context.Context, c *Config) ([]*Result, error) {
 
 	matches := regexp.MustCompile(`data-hovercard-url="/users/(.*?)/hovercard`).FindStringSubmatch(string(bs))
 	if len(matches) == 0 {
-		res = append(res, &Result{Score: 10, Max: 10, Msg: fmt.Sprintf("No releases found. Great work!")})
+		res = append(res, &Result{Score: 10, Max: 10, Msg: fmt.Sprintf("No releases found?? Probably a bug.")})
 		return res, nil
 	}
 

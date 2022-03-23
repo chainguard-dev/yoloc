@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -17,7 +19,9 @@ import (
 
 var (
 	repoFlag  = flag.String("repo", "google/triage-party", "Github repo to check")
-	imageFlag = flag.String("image", "", "image to chec")
+	imageFlag = flag.String("image", "", "image to check")
+	serveFlag = flag.Bool("serve", false, "yoloc webserver mode")
+	portFlag  = flag.Int("port", 8080, "serve yoloc on this port")
 
 	ckS = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
 	suS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00FF00"))
@@ -45,18 +49,24 @@ func fname(i interface{}) string {
 }
 
 func stance(perc int) {
-	fmt.Printf("Your YOLO stance:\n\n")
+	fmt.Printf("Your YOLO personality:\n\n")
 
 	switch {
 	case perc == 0:
 		figure.NewFigure("Dr. Fauci", "", true).Print()
 		fmt.Println("\nMeasured safety. YOLO FAIL!")
+	case perc > 75:
+		figure.NewFigure("LeeRoy Jenkins", "", true).Print()
+		fmt.Println("")
+	case perc > 50:
+		figure.NewFigure("Joan de Arc", "", true).Print()
+		fmt.Println("\nShe did WHAT?")
+	case perc > 25:
+		figure.NewFigure("Jimmy Carter", "", true).Print()
+		fmt.Println("\nCrazy.")
 	case perc > 0:
 		figure.NewFigure("Allan Pollock", "", true).Print()
 		fmt.Println("\nBorrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale")
-	case perc == 100:
-		figure.NewFigure("LeeRoy Jenkins", "", true).Print()
-		fmt.Println("")
 	}
 }
 
@@ -77,28 +87,11 @@ func printResult(n string, r *Result, err error) {
 
 }
 
-func main() {
-	flag.Parse()
+func runChecks(ctx context.Context, cf *Config) (int, error) {
+	score := 0
+	maxScore := 0
 
-	fmt.Println(suS.Render(`
-             |
-   |  |  _ \ |  _ \  _|
-  \_, |\___/_|\___/\__|        v0.0-main
-  ___/
-
-`))
-
-	repo := strings.Replace(*repoFlag, "https://github.com/", "", 1)
-	parts := strings.Split(repo, "/")
-
-	cf := &Config{
-		Github: repo,
-		Owner:  parts[0],
-		Name:   parts[1],
-		Image:  *imageFlag,
-	}
-
-	fmt.Printf("Analyzing %+v\n", cf)
+	fmt.Printf("Analyzing %s %s\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
 		CheckCommits,
@@ -106,16 +99,6 @@ func main() {
 		CheckSignedImage,
 		CheckReleaser,
 	}
-	ctx := context.Background()
-	score := 0
-	maxScore := 0
-
-	// authentication procedures
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	httpClient := oauth2.NewClient(context.Background(), src)
-	cf.V4Client = githubv4.NewClient(httpClient)
 
 	for _, c := range checkers {
 		n := fname(c)
@@ -136,5 +119,62 @@ func main() {
 
 	fmt.Printf("\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
 	stance(perc)
-	os.Exit(perc)
+
+	level := (perc / 100) * 4
+	fmt.Printf("\nYour YOLO level: %d out of %d\n", (perc/100)*4, 4)
+
+	return level, nil
+}
+
+func main() {
+	flag.Parse()
+	commit := "unknown"
+	bi, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, pair := range bi.Settings {
+			if pair.Key == "vcs.revision" {
+				commit = pair.Value
+			}
+		}
+	}
+
+	fmt.Println(suS.Render(fmt.Sprintf(`
+             |
+   |  |  _ \ |  _ \  _|
+  \_, |\___/_|\___/\__|        v0.0-%7.7s
+  ___/
+
+`, commit)))
+
+	ctx := context.Background()
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	v4c := githubv4.NewClient(httpClient)
+
+	if *serveFlag {
+		addr := fmt.Sprintf(":%s", os.Getenv("PORT"))
+		if addr == ":" {
+			addr = fmt.Sprintf(":%d", *portFlag)
+		}
+		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c})
+	}
+
+	repo := strings.Replace(*repoFlag, "https://github.com/", "", 1)
+	parts := strings.Split(repo, "/")
+
+	cf := &Config{
+		Github:   repo,
+		Owner:    parts[0],
+		Name:     parts[1],
+		Image:    *imageFlag,
+		V4Client: v4c,
+	}
+
+	level, err := runChecks(ctx, cf)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+	os.Exit(level)
 }
