@@ -26,7 +26,7 @@ var (
 	paS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFFF00"))
 )
 
-type Checker func(context.Context, *Config) (*Result, error)
+type Checker func(context.Context, *Config) ([]*Result, error)
 
 func out(s lipgloss.Style, msg string, args ...interface{}) {
 	fmt.Printf(s.Render(fmt.Sprintf(msg, args...)))
@@ -102,7 +102,6 @@ func main() {
 
 	checkers := []Checker{
 		CheckCommits,
-		CheckRoot,
 		CheckSBOM,
 		CheckSignedImage,
 		CheckReleaser,
@@ -119,13 +118,15 @@ func main() {
 	cf.V4Client = githubv4.NewClient(httpClient)
 
 	for _, c := range checkers {
-		r, err := c(ctx, cf)
-		if r != nil {
-			score += r.Score
-			maxScore += r.Max
-		}
 		n := fname(c)
-		printResult(n, r, err)
+		rs, err := c(ctx, cf)
+		for _, r := range rs {
+			if r != nil {
+				score += r.Score
+				maxScore += r.Max
+			}
+			printResult(n, r, err)
+		}
 	}
 
 	perc := 0

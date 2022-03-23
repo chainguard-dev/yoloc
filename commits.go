@@ -3,36 +3,42 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/shurcooL/githubv4"
 )
 
-// Code appropriated from https://github.com/ossf/scorecard
+var (
+	maxCommits   = 200
+	maxCommitAge = 365 * 24 * time.Hour
+)
+
+// Based heavily on code from https://github.com/ossf/scorecard - thanks guys!
 
 type graphqlData struct {
 	Repository struct {
 		Object struct {
 			Commit struct {
 				History struct {
+
 					// PageInfo is used for pagination
 					PageInfo struct {
 						EndCursor   githubv4.String
 						HasNextPage bool
 					}
 					Nodes []struct {
-						CommittedDate githubv4.DateTime
-						Oid           githubv4.GitObjectID
-						Author        struct {
+						AuthoredByCommitter bool
+						CommittedDate       githubv4.DateTime
+						Oid                 githubv4.GitObjectID
+						Author              struct {
 							User struct {
 								Login githubv4.String
 							}
 						}
 						Committer struct {
-							Name *string
+							Name githubv4.String
 							User struct {
-								Login *string
+								Login githubv4.String
 							}
 						}
 						Signature struct {
@@ -50,10 +56,21 @@ type graphqlData struct {
 								Author struct {
 									Login githubv4.String
 								}
-								Number     githubv4.Int
-								HeadRefOid githubv4.String
-								MergedAt   githubv4.DateTime
-								Reviews    struct {
+								AuthorAssociation githubv4.String
+								Number            githubv4.Int
+								HeadRefOid        githubv4.String
+								MergeCommit       struct {
+									Author struct {
+										User struct {
+											Login githubv4.String
+										}
+									}
+								}
+								MergedAt githubv4.DateTime
+								MergedBy struct {
+									Login githubv4.String
+								}
+								Reviews struct {
 									Nodes []struct {
 										State  githubv4.String
 										Author struct {
@@ -78,6 +95,7 @@ type Commit struct {
 	Committer              User
 	Signed                 bool
 	Approved               bool
+	Reviewed               bool
 	AssociatedMergeRequest PullRequest
 }
 
@@ -128,10 +146,10 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 		"commitsCursor":         (*githubv4.String)(nil),
 	}
 
+	ageCutoff := time.Now().Add(maxCommitAge * -1)
 	ret := []Commit{}
 
 	for {
-		//log.Printf("making query: %+v\nvars: %v\n", query, vars)
 		err := client.Query(context.Background(), &query, vars)
 		if err != nil {
 			return nil, fmt.Errorf("query: %w", err)
@@ -139,10 +157,10 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 
 		for _, commit := range query.Repository.Object.Commit.History.Nodes {
 			var committer string
-			if commit.Committer.User.Login != nil && *commit.Committer.User.Login != "" {
-				committer = *commit.Committer.User.Login
-			} else if commit.Committer.Name != nil &&
-				*commit.Committer.Name == "GitHub" &&
+			if commit.Committer.User.Login != "" {
+				committer = string(commit.Committer.User.Login)
+			} else if commit.Committer.Name != "" &&
+				commit.Committer.Name == "GitHub" &&
 				commit.Signature.IsValid &&
 				commit.Signature.WasSignedByGitHub {
 				committer = "github"
@@ -151,6 +169,7 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 			var associatedPR PullRequest
 
 			approved := false
+			reviewed := false
 
 			for _, pr := range commit.AssociatedPullRequests.Nodes {
 				if string(pr.Repository.Owner.Login) != repoOwner ||
@@ -165,9 +184,10 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 				}
 
 				// Merging someone elses PR is considered tacit approval
-				if string(pr.Author.Login) != string(commit.Author.User.Login) {
-					//	log.Printf("#%d: tacit approval: pr owned by %s, commit owned by %s\ncommit: %+v\npr: %+v\n", pr.Number, pr.Author.Login, commit.Author.User.Login, commit, pr)
+				if string(pr.MergedBy.Login) != string(commit.Author.User.Login) {
+					// log.Printf("#%d: tacit approval: pr merged by %s, commit owned by %s\ncommit: %+v\npr: %+v\n", pr.Number, pr.MergedBy.Login, commit.Author.User.Login, commit, pr)
 					approved = true
+					reviewed = true
 				}
 
 				for _, review := range pr.Reviews.Nodes {
@@ -175,6 +195,11 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 						State:  string(review.State),
 						Author: &User{Login: string(review.Author.Login)},
 					})
+
+					if review.Author.Login != pr.Author.Login {
+						reviewed = true
+					}
+
 					if review.State == "APPROVED" {
 						//	log.Printf("#%d: found approval: %v", pr.Number, review)
 						approved = true
@@ -184,9 +209,9 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 				break
 			}
 
-			if !approved {
-				log.Printf("found unapproved commit: %+v\nassociated PR: %+v", commit, associatedPR)
-			}
+			//			if !reviewed {
+			//				log.Printf("\n--------\nunreviewed commit: %+v\n--------\n", commit)
+			//			}
 
 			ret = append(ret, Commit{
 				CommittedDate:          commit.CommittedDate.Time,
@@ -195,10 +220,16 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 				AssociatedMergeRequest: associatedPR,
 				Signed:                 commit.Signature.IsValid,
 				Approved:               approved,
+				Reviewed:               reviewed,
 			})
+
+			if commit.CommittedDate.Before(ageCutoff) {
+				break
+			}
+
 		}
 
-		if len(ret) > 100 {
+		if len(ret) > maxCommits {
 			break
 		}
 

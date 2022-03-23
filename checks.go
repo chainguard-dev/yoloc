@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"os"
 	"regexp"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -30,14 +30,7 @@ type Result struct {
 	Score int
 	Max   int
 	Msg   string
-}
-
-func CheckRoot(_ context.Context, _ *Config) (*Result, error) {
-	max := 10
-	if euid := os.Geteuid(); euid > 0 {
-		return &Result{Score: 0, Max: max, Msg: fmt.Sprintf("effective euid is %d, not 0", euid)}, nil
-	}
-	return &Result{Score: max, Max: max, Msg: "I AM GROOT"}, nil
+	Level int
 }
 
 func pageRE(url, regex string) (bool, error) {
@@ -51,20 +44,17 @@ func pageRE(url, regex string) (bool, error) {
 	return regexp.MustCompile(regex).MatchString(string(bs)), nil
 }
 
-func CheckSBOM(_ context.Context, c *Config) (*Result, error) {
-	max := 10
-	r := &Result{
-		Score: max,
-		Max:   max,
-	}
+func CheckSBOM(_ context.Context, c *Config) ([]*Result, error) {
+	res := []*Result{}
 
 	ok, err := pageRE(fmt.Sprintf("https://github.com/%s", c.Github), ("(?i)sbom|spdx"))
 	if err != nil {
 		return nil, fmt.Errorf("page: %w", err)
 	}
 	if ok {
-		r.Msg += "Found SBOM mention on main page. "
-		r.Score = r.Score - 4
+		res = append(res, &Result{Msg: "Found evidence of SBOM usage on main page", Score: 0, Max: 10})
+	} else {
+		res = append(res, &Result{Msg: "No evidence of SBOM usage on main page", Score: 5, Max: 5})
 	}
 
 	ok, err = pageRE(fmt.Sprintf("https://github.com/%s/releases", c.Github), ("(?i)sbom|spdx"))
@@ -72,29 +62,21 @@ func CheckSBOM(_ context.Context, c *Config) (*Result, error) {
 		return nil, fmt.Errorf("page: %w", err)
 	}
 	if ok {
-		r.Msg += "Found SBOM mention on releases page. "
-		r.Score = r.Score - 6
+		res = append(res, &Result{Msg: "Found evidence of SBOM usage on releases page", Score: 0, Max: 10})
+	} else {
+		res = append(res, &Result{Msg: "No evidence of SBOM usage on releases page", Score: 10, Max: 10})
 	}
 
-	if r.Msg == "" {
-		r.Msg = fmt.Sprintf("No SBOM found at %s", c.Github)
-	}
-
-	return r, nil
+	return res, nil
 }
 
-func CheckSignedImage(_ context.Context, c *Config) (*Result, error) {
+func CheckSignedImage(_ context.Context, c *Config) ([]*Result, error) {
 	// Does not yet implement autodiscovery
 	if c.Image == "" {
 		return nil, fmt.Errorf("Image URL not provided")
 	}
 
-	max := 10
-	r := &Result{
-		Score: max,
-		Max:   max,
-		Msg:   "Found 0 verified signatures",
-	}
+	res := []*Result{}
 
 	ctx := context.TODO()
 	ref, err := name.ParseReference(c.Image)
@@ -125,23 +107,22 @@ func CheckSignedImage(_ context.Context, c *Config) (*Result, error) {
 	}
 
 	if len(vs) > 0 {
-		r.Score = 0
-		r.Msg = fmt.Sprintf("Found %d verified signatures", len(vs))
+		res = append(res, &Result{Msg: fmt.Sprintf("Found %d verified signatures", len(vs)), Score: 0, Max: 10})
+	} else {
+		res = append(res, &Result{Msg: "Found no verified signatures!", Score: 10, Max: 10})
 	}
 
-	return r, nil
+	return res, nil
 }
 
-func CheckCommits(_ context.Context, c *Config) (*Result, error) {
-	max := 10
-	r := &Result{
-		Score: max,
-		Max:   max,
-	}
+func CheckCommits(_ context.Context, c *Config) ([]*Result, error) {
+	res := []*Result{}
 
 	signed := 0
 	approved := 0
 	commits := 0
+	pr := 0
+	reviewed := 0
 
 	cs, err := Commits(c.V4Client, c.Owner, c.Name, "main")
 	if err != nil {
@@ -155,7 +136,11 @@ func CheckCommits(_ context.Context, c *Config) (*Result, error) {
 		}
 	}
 
+	newest := time.Time{}
 	for _, co := range cs {
+		if co.CommittedDate.After(newest) {
+			newest = co.CommittedDate
+		}
 		commits++
 		if co.Signed {
 			signed++
@@ -163,58 +148,71 @@ func CheckCommits(_ context.Context, c *Config) (*Result, error) {
 		if co.Approved {
 			approved++
 		}
+
+		if co.Reviewed {
+			reviewed++
+		}
+
+		if co.AssociatedMergeRequest.Number > 0 {
+			pr++
+		}
 	}
 
-	if signed > 0 {
-		percSigned := (float64(signed) / float64(commits))
-		r.Score = r.Score - int(math.Ceil(5*percSigned))
-		r.Msg = fmt.Sprintf("%.1f%% of the last %d commits were signed. ", percSigned*100, len(cs))
+	percSigned := (float64(signed) / float64(commits))
+	res = append(res, &Result{Msg: fmt.Sprintf("%.1f%% of the last %d commits were signed. ", percSigned*100, len(cs)), Score: 5 - int(math.Ceil(5*percSigned)), Max: 5})
+
+	percApproved := (float64(approved) / float64(commits))
+	res = append(res, &Result{Msg: fmt.Sprintf("%.1f%% of the last %d commits were approved.", percApproved*100, len(cs)), Score: 10 - int(math.Ceil(10*percApproved)), Max: 10})
+
+	percReviewed := (float64(reviewed) / float64(commits))
+	res = append(res, &Result{Msg: fmt.Sprintf("%.1f%% of the last %d commits were reviewed.", percReviewed*100, len(cs)), Score: 10 - int(math.Ceil(10*percReviewed)), Max: 10})
+
+	percPR := (float64(pr) / float64(commits))
+	res = append(res, &Result{Msg: fmt.Sprintf("%.1f%% of the last %d commits had an associated PR", percPR*100, len(cs)), Score: 5 - int(math.Ceil(5*percApproved)), Max: 5})
+
+	staleDays := int(time.Now().Sub(newest).Hours() / 24)
+	if staleDays > 90 {
+		res = append(res, &Result{Msg: fmt.Sprintf("Last commit was %d days ago (abandoned)", staleDays), Score: 5, Max: 5})
+	} else {
+		res = append(res, &Result{Msg: fmt.Sprintf("Last commit was %d days ago (active)", staleDays), Score: 0, Max: 5})
 	}
 
-	if signed > 0 {
-		percApproved := (float64(approved) / float64(commits))
-		r.Score = r.Score - int(math.Ceil(5*percApproved))
-		r.Msg = r.Msg + fmt.Sprintf("%.1f%% of the last %d commits were approved.", percApproved*100, len(cs))
-	}
-
-	if r.Msg == "" {
-		r.Msg = "No reviewers or signed commits found"
-
-	}
-	return r, nil
+	return res, nil
 }
 
-func CheckPrivateKeys(_ context.Context, c *Config) (*Result, error) {
+func CheckPrivateKeys(_ context.Context, c *Config) ([]*Result, error) {
 	max := 10
 	r := &Result{
 		Score: max,
 		Max:   max,
 		Msg:   "Found 1 things that look like private keys",
 	}
-	return r, nil
+	return []*Result{r}, nil
 }
 
-func CheckDependencies(_ context.Context, c *Config) (*Result, error) {
+func CheckDependencies(_ context.Context, c *Config) ([]*Result, error) {
 	max := 10
 	r := &Result{
 		Score: max,
 		Max:   max,
 		Msg:   "Found 1 things that look like private keys",
 	}
-	return r, nil
+	return []*Result{r}, nil
 }
 
-func CheckReproducibleBuild(_ context.Context, c *Config) (*Result, error) {
+func CheckReproducibleBuild(_ context.Context, c *Config) ([]*Result, error) {
 	max := 10
 	r := &Result{
 		Score: max,
 		Max:   max,
 		Msg:   "Found 1 things that look like private keys",
 	}
-	return r, nil
+	return []*Result{r}, nil
 }
 
-func CheckReleaser(_ context.Context, c *Config) (*Result, error) {
+func CheckReleaser(_ context.Context, c *Config) ([]*Result, error) {
+	res := []*Result{}
+
 	url := fmt.Sprintf("https://github.com/%s/releases", c.Github)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -225,23 +223,25 @@ func CheckReleaser(_ context.Context, c *Config) (*Result, error) {
 
 	matches := regexp.MustCompile(`data-hovercard-url="/users/(.*?)/hovercard`).FindStringSubmatch(string(bs))
 	if len(matches) == 0 {
-		return &Result{Score: 10, Max: 10, Msg: fmt.Sprintf("No releases found. Great work!")}, nil
+		res = append(res, &Result{Score: 10, Max: 10, Msg: fmt.Sprintf("No releases found. Great work!")})
+		return res, nil
 	}
 
 	user := matches[1]
 	if regexp.MustCompile("bot|action|release|jenkins|auto").MatchString(user) {
-		return &Result{Score: 0, Max: 10, Msg: fmt.Sprintf("Previous release was created by automation (%q)", user)}, nil
+		res = append(res, &Result{Score: 0, Max: 10, Msg: fmt.Sprintf("Previous release was created by automation (%q)", user)})
+	} else {
+		res = append(res, &Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (not fully automated)", user)})
 	}
-
-	return &Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (not automated)", user)}, nil
+	return res, nil
 }
 
-func CheckArtifactSignatures(_ context.Context, c *Config) (*Result, error) {
+func CheckArtifactSignatures(_ context.Context, c *Config) ([]*Result, error) {
 	max := 10
 	r := &Result{
 		Score: max,
 		Max:   max,
 		Msg:   "Found 1 things that look like private keys",
 	}
-	return r, nil
+	return []*Result{r}, nil
 }
