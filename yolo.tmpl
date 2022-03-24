@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>{{ .Title }}</title></head>
+<body>
+  <h1>yoloc</h1>
+    <code>
+    <form action="/" method="get" class="form-example">
+        <label for="name">$ yoloc --repo </label>
+        <input type="text" name="repo" id="repo" value="{{ .Repo }}" required>
+        <label for="email"> --image</label>
+        <input type="text" name="image" id="repo" value="{{ .Image }}">
+        <input type="submit" value="Submit">
+    </form>
+    {{ .Out }}
+    </code>
+
+  <footer>
+    For more info, see <a href="https://github.com/chainguard-dev/yoloc">github.com/chainguard-dev/yoloc</a>
+  </footer>
+</body>
+</html>
