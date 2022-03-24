@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"reflect"
@@ -32,15 +33,11 @@ var (
 
 type Checker func(context.Context, *Config) ([]*Result, error)
 
-func out(s lipgloss.Style, msg string, args ...interface{}) {
-	fmt.Printf(s.Render(fmt.Sprintf(msg, args...)))
-}
-
-func checkBox(s lipgloss.Style, mark string, msg string) {
-	fmt.Println(
-		ckS.Render("  [") +
-			s.Render(mark) +
-			ckS.Render("] ") +
+func checkBox(w io.Writer, s lipgloss.Style, mark string, msg string) {
+	fmt.Fprintln(w,
+		ckS.Render("  [")+
+			s.Render(mark)+
+			ckS.Render("] ")+
 			s.Render(msg))
 }
 
@@ -48,50 +45,57 @@ func fname(i interface{}) string {
 	return strings.Replace(runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name(), "main.", "", 1)
 }
 
-func stance(perc int) {
-	fmt.Printf("Your YOLO personality:\n\n")
-
+func personality(w io.Writer, perc int) {
+	fig := ""
+	desc := ""
 	switch {
 	case perc == 0:
-		figure.NewFigure("Dr. Fauci", "", true).Print()
-		fmt.Println("\nMeasured safety. YOLO FAIL!")
+		fig = figure.NewFigure("Dr. Fauci", "", true).String()
+		desc = "Measured safety. YOLO FAIL!"
 	case perc > 75:
-		figure.NewFigure("LeeRoy Jenkins", "", true).Print()
-		fmt.Println("")
+		fig = figure.NewFigure("LeeRoy Jenkins", "", true).String()
+		desc = "Do your thang, LeeRoy!"
 	case perc > 50:
-		figure.NewFigure("Joan de Arc", "", true).Print()
-		fmt.Println("\nShe did WHAT?")
+		fig = figure.NewFigure("Joan de Arc", "", true).String()
+		desc = "She did WHAT?"
 	case perc > 25:
-		figure.NewFigure("Jimmy Carter", "", true).Print()
-		fmt.Println("\nCrazy.")
+		fig = figure.NewFigure("Jimmy Carter", "", true).String()
+		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
-		figure.NewFigure("Allan Pollock", "", true).Print()
-		fmt.Println("\nBorrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale")
+		fig = figure.NewFigure("Allan Pollock", "", true).String()
+		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
 	}
+
+	fmt.Fprintf(w, "\n\nYour YOLO personality:\n%s\n>> %s\n", fig, desc)
+
 }
 
-func printResult(n string, r *Result, err error) {
+func printResult(w io.Writer, n string, r *Result, err error) {
 	switch {
 	case err != nil:
-		checkBox(erS, "error", fmt.Sprintf("%s failed: %v", n, err))
+		checkBox(w, erS, "error", fmt.Sprintf("%s failed: %v", n, err))
 	case r.Score == r.Max: // They really YOLO
-		checkBox(suS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, suS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
 	case r.Score == 0: // Too good
-		checkBox(faS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, faS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
 	case r.Score > 0:
-		checkBox(paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
 	default:
-		checkBox(paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
 
 	}
 
 }
 
-func runChecks(ctx context.Context, cf *Config) (int, error) {
+func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	score := 0
 	maxScore := 0
+	cf.Github = strings.Replace(cf.Github, "https://github.com/", "", 1)
+	parts := strings.Split(cf.Github, "/")
+	cf.Owner = parts[0]
+	cf.Name = parts[1]
 
-	fmt.Printf("Analyzing %s %s\n", cf.Github, cf.Image)
+	fmt.Fprintf(w, "Analyzing %s %s\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
 		CheckCommits,
@@ -108,7 +112,7 @@ func runChecks(ctx context.Context, cf *Config) (int, error) {
 				score += r.Score
 				maxScore += r.Max
 			}
-			printResult(n, r, err)
+			printResult(w, n, r, err)
 		}
 	}
 
@@ -117,17 +121,16 @@ func runChecks(ctx context.Context, cf *Config) (int, error) {
 		perc = int((float64(score) / float64(maxScore)) * 100)
 	}
 
-	fmt.Printf("\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
-	stance(perc)
+	fmt.Fprintf(w, "\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
+	personality(w, perc)
 
 	level := (perc / 100) * 4
-	fmt.Printf("\nYour YOLO level: %d out of %d\n", (perc/100)*4, 4)
+	fmt.Fprintf(w, "\nYour YOLO level: %d out of %d\n", (perc/100)*4, 4)
 
 	return level, nil
 }
 
-func main() {
-	flag.Parse()
+func showBanner(w io.Writer) {
 	commit := "unknown"
 	bi, ok := debug.ReadBuildInfo()
 	if ok {
@@ -138,13 +141,18 @@ func main() {
 		}
 	}
 
-	fmt.Println(suS.Render(fmt.Sprintf(`
+	fmt.Fprintln(w, suS.Render(fmt.Sprintf(`
              |
    |  |  _ \ |  _ \  _|
   \_, |\___/_|\___/\__|        v0.0-%7.7s
   ___/
 
 `, commit)))
+}
+
+func main() {
+	flag.Parse()
+	showBanner(os.Stdout)
 
 	ctx := context.Background()
 	src := oauth2.StaticTokenSource(
@@ -161,18 +169,13 @@ func main() {
 		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c})
 	}
 
-	repo := strings.Replace(*repoFlag, "https://github.com/", "", 1)
-	parts := strings.Split(repo, "/")
-
 	cf := &Config{
-		Github:   repo,
-		Owner:    parts[0],
-		Name:     parts[1],
+		Github:   *repoFlag,
 		Image:    *imageFlag,
 		V4Client: v4c,
 	}
 
-	level, err := runChecks(ctx, cf)
+	level, err := runChecks(ctx, os.Stdout, cf)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
