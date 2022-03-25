@@ -3,8 +3,17 @@ module github.com/chainguard-dev/yoloc
 go 1.18
 
 require (
+	github.com/buildkite/terminal-to-html/v3 v3.6.1
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
+	github.com/eth0izzle/shhgit v0.0.0-20210225202122-65351a789931
+	github.com/go-git/go-git/v5 v5.4.2
+	github.com/google/go-containerregistry v0.8.1-0.20220209165246-a44adc326839
+	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
+	github.com/sigstore/cosign v1.6.0
+	github.com/sigstore/rekor v0.4.1-0.20220114213500-23f583409af3
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+	k8s.io/klog/v2 v2.40.1
 )
 
 require (
@@ -53,7 +62,6 @@ require (
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20220216180153-3d7835abdf40 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
-	github.com/buildkite/terminal-to-html/v3 v3.6.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20220119192733-fe33c00cee21 // indirect
@@ -67,14 +75,12 @@ require (
 	github.com/docker/docker v20.10.12+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/eth0izzle/shhgit v0.0.0-20210225202122-65351a789931 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
-	github.com/go-git/go-git/v5 v5.4.2 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-openapi/analysis v0.21.2 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect
@@ -96,7 +102,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
-	github.com/google/go-containerregistry v0.8.1-0.20220209165246-a44adc326839 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
 	github.com/google/go-github/v42 v42.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -175,11 +180,8 @@ require (
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
-	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2 // indirect
 	github.com/shurcooL/graphql v0.0.0-20200928012149-18c5c3165e3a // indirect
-	github.com/sigstore/cosign v1.6.0 // indirect
 	github.com/sigstore/fulcio v0.1.2-0.20220114150912-86a2036f9bc7 // indirect
-	github.com/sigstore/rekor v0.4.1-0.20220114213500-23f583409af3 // indirect
 	github.com/sigstore/sigstore v1.1.1-0.20220217212907-e48ca03a5ba7 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
@@ -207,7 +209,6 @@ require (
 	golang.org/x/crypto v0.0.0-20220213190939-1e6e3497d506 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
@@ -230,7 +231,6 @@ require (
 	k8s.io/api v0.23.3 // indirect
 	k8s.io/apimachinery v0.23.3 // indirect
 	k8s.io/client-go v0.23.3 // indirect
-	k8s.io/klog/v2 v2.40.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf // indirect
 	k8s.io/utils v0.0.0-20220127004650-9b3446523e65 // indirect
 	knative.dev/pkg v0.0.0-20220202132633-df430fa0dd96 // indirect
@@ -240,4 +240,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/eth0izzle/shhgit => ../shhgit
+// replace github.com/eth0izzle/shhgit => github.com/tstromberg/sshgit v0.2.1
+
+replace github.com/eth0izzle/shhgit => github.com/tstromberg/shhgit v0.2.1
