@@ -75,7 +75,7 @@ func (s *Server) Root() http.HandlerFunc {
 				V4Client: s.V4Client,
 			})
 		} else {
-			bw.Write([]byte("\nPatiently waiting for you to click that YOLO! button ...\n"))
+			bw.Write([]byte("Patiently waiting for you to click that YOLO! button ...\n"))
 		}
 
 		bw.Flush()

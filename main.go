@@ -152,7 +152,6 @@ func showBanner(w io.Writer) {
    |  |  _ \ |  _ \  _|
   \_, |\___/_|\___/\__|        v0.0-%7.7s
   ___/
-
 `, commit)))
 }
 
