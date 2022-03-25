@@ -344,9 +344,10 @@ pre {
         <input type="text" name="repo" id="repo" value="{{ .Repo }}" required>
         <label for="email"> --image</label>
         <input type="text" name="image" id="repo" value="{{ .Image }}">
-        <input type="submit" value="YOLO!">
+        <input type="submit" value="YOLO!" onclick=waiting()>
     </form>
-    <pre>
+
+    <pre id="result">
     {{ .Out }}
     </pre>
 
@@ -355,6 +356,11 @@ pre {
     </footer>
 
     </section>
-
 </body>
 </html>
+
+<script language="javascript">
+function waiting() {
+    document.getElementById('result').innerHTML = "Submission received. Be patient - this may take a minute!";
+}
+</script>
