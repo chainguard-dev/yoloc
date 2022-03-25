@@ -77,10 +77,13 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 
 func runShhGit(dir string) ([]string, error) {
 	maxSize := uint(16)
+	koData := os.Getenv("KO_DATA_PATH")
+
 	s, err := shhgit.NewSession(&shhgit.Options{
 		Local:           &dir,
 		MaximumFileSize: &maxSize,
 		ConfigName:      shhgitFlag,
+		ConfigPath:      &koData,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("shhgit: %w", err)
