@@ -45,13 +45,13 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 				return nil, fmt.Errorf("clone: %w", err)
 			}
 		}
-
 	}
 
 	res := &Result{
 		Score: 0,
 		Max:   10,
-		Msg:   "Found zero private keys",
+		Msg:   fmt.Sprintf("Zero private keys checked into %s. Sharing is caring :(", c.Github),
+		Level: 2,
 	}
 
 	found, err := runShhGit(ctx, dest)
@@ -59,17 +59,57 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 		return nil, fmt.Errorf("shhgit: %w", err)
 	}
 
-	if len(found) > 0 {
+	keys := []string{}
+	images := map[string]bool{}
+
+	for _, f := range found {
+		if f.kind == "image" && strings.Contains(f.content, c.Name) {
+			images[f.content] = true
+		}
+
+		if f.kind == "key" && !strings.Contains(f.path, "test") {
+			keys = append(keys, f.path)
+		}
+	}
+
+	//	log.Printf("possible images: %v", images)
+	if len(keys) > 0 {
 		res = &Result{
 			Score: 10,
 			Max:   10,
-			Msg:   fmt.Sprintf("Found %d paths that resemble a private keys: %v", len(found), found),
+			Msg:   fmt.Sprintf("Found %d possibly private key(s): %v", len(keys), keys),
+			Level: 2,
 		}
 	}
+
+	for i := range images {
+		c.FoundImages = append(c.FoundImages, i)
+		// Add some variations
+		if !strings.Contains(i, fmt.Sprintf("%s/%s", c.Name, c.Name)) {
+			c.FoundImages = append(c.FoundImages, i+"/"+c.Name)
+		}
+		try := fmt.Sprintf("%s-server", c.Name)
+		if !strings.Contains(i, try) {
+			c.FoundImages = append(c.FoundImages, i+"/"+try)
+		}
+
+		try = fmt.Sprintf("%s-cli", c.Name)
+		if !strings.Contains(i, try) {
+			c.FoundImages = append(c.FoundImages, i+"/"+try)
+		}
+	}
+
 	return []*Result{res}, nil
 }
 
-func runShhGit(ctx context.Context, dir string) ([]string, error) {
+type match struct {
+	kind    string
+	path    string
+	name    string
+	content string
+}
+
+func runShhGit(ctx context.Context, dir string) ([]match, error) {
 	maxSize := uint(16)
 	koData := os.Getenv("KO_DATA_PATH")
 	if koData == "" {
@@ -86,18 +126,26 @@ func runShhGit(ctx context.Context, dir string) ([]string, error) {
 		return nil, fmt.Errorf("shhgit: %w", err)
 	}
 
-	found := []string{}
+	found := []match{}
 	for _, file := range shhgit.GetMatchingFiles(s, dir) {
-		relPath := strings.Replace(file.Path, dir, "", -1)
+		relPath := strings.ReplaceAll(file.Path, dir, "")
 		for _, signature := range s.Signatures {
 			if matched, part := signature.Match(file); matched {
 				if part == shhgit.PartContents {
-					if matches := signature.GetContentsMatches(s, file.Contents); len(matches) > 0 {
-						found = append(found, strings.TrimLeft(relPath, "/"))
+					if matches := signature.StringSubMatches(s, file.Contents); len(matches) > 0 {
+						if strings.HasPrefix(signature.Name(), "_IMAGE_") {
+							found = append(found, match{kind: "image", path: strings.TrimLeft(relPath, "/"), name: signature.Name(), content: matches[0][1]})
+							break
+						}
+						found = append(found, match{kind: "key", path: strings.TrimLeft(relPath, "/"), name: signature.Name()})
 					}
+				} else {
+					found = append(found, match{kind: "key", path: strings.TrimLeft(relPath, "/"), name: signature.Name()})
 				}
 			}
 		}
+
+		// find a docker container?
 	}
 
 	return found, nil

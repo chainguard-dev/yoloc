@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"reflect"
 	"runtime"
@@ -26,8 +25,10 @@ var (
 	shhgitFlag = flag.String("sshgit-config", "shhgit.yaml", "path to shhgit config")
 )
 
-type Checker func(context.Context, *Config) ([]*Result, error)
-type Colorizer func(arc interface{}) au.Value
+type (
+	Checker   func(context.Context, *Config) ([]*Result, error)
+	Colorizer func(arc interface{}) au.Value
+)
 
 func checkBox(w io.Writer, c Colorizer, mark string, msg string) {
 	fmt.Fprintln(w,
@@ -53,22 +54,25 @@ func personality(w io.Writer, perc int) {
 		color = au.BrightGreen
 		fig = figure.NewFigure("LeeRoy Jenkins", "", true).String()
 		desc = "Do your thang, LeeRoy!"
-	case perc > 50:
+	case perc > 60:
+		color = au.BrightRed
+		fig = figure.NewFigure("Allan Pollock", "", true).String()
+		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
+	case perc > 40:
 		color = au.BrightYellow
 		fig = figure.NewFigure("Joan de Arc", "", true).String()
 		desc = "She did WHAT?"
-	case perc > 25:
+	case perc > 20:
 		color = au.BrightMagenta
 		fig = figure.NewFigure("Jimmy Carter", "", true).String()
 		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
 		color = au.BrightRed
-		fig = figure.NewFigure("Allan Pollock", "", true).String()
-		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
+		fig = figure.NewFigure("William Jennings Bryan", "", true).String()
+		desc = "Doesn't drink. Doesn't smoke. Doesn't chew. Doesn't swear. Ran for president multiple times."
 	}
 
 	fmt.Fprintf(w, "Your YOLO personality:\n%s\n>> %s\n", color(fig), desc)
-
 }
 
 func printResult(w io.Writer, n string, r *Result, err error) {
@@ -76,19 +80,17 @@ func printResult(w io.Writer, n string, r *Result, err error) {
 	case err != nil:
 		checkBox(w, au.BrightRed, "error", fmt.Sprintf("%s failed: %v", n, err))
 	case r.Score == r.Max: // They really YOLO
-		checkBox(w, au.BrightGreen, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
+		checkBox(w, au.BrightGreen, fmt.Sprintf("%2d/%2d", r.Score, r.Max), r.Msg)
 	case r.Score == 0: // Too good
-		checkBox(w, au.Magenta, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
+		checkBox(w, au.Magenta, fmt.Sprintf("%2d/%2d", r.Score, r.Max), r.Msg)
 	case r.Score > 0:
-		checkBox(w, au.BrightYellow, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
+		checkBox(w, au.BrightYellow, fmt.Sprintf("%2d/%2d", r.Score, r.Max), r.Msg)
 	default:
-		checkBox(w, au.White, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
-
+		checkBox(w, au.White, fmt.Sprintf("%2d/%2d", r.Score, r.Max), r.Msg)
 	}
-
 }
 
-func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
+func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 	score := 0
 	maxScore := 0
 	cf.Github = strings.Replace(cf.Github, "https://github.com/", "", 1)
@@ -96,15 +98,17 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	cf.Owner = parts[0]
 	cf.Name = parts[1]
 
-	fmt.Fprintf(w, "Analyzing %s %s ...\n", cf.Github, cf.Image)
+	fmt.Fprintf(w, "Analyzing %s %s ...\n\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
-		CheckCommits,
 		CheckSBOM,
+		CheckReleaser,
+		CheckCommits,
 		CheckPrivateKeys,
 		CheckSignedImage,
-		CheckReleaser,
 	}
+
+	maxLevel := 0
 
 	for _, c := range checkers {
 		n := fname(c)
@@ -117,6 +121,10 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 			if r != nil {
 				score += r.Score
 				maxScore += r.Max
+				// For fun, we assign your level to be the highest observed
+				if r.Score > 0 && r.Level > maxLevel {
+					maxLevel = r.Level
+				}
 			}
 			printResult(w, n, r, err)
 		}
@@ -131,9 +139,9 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	personality(w, perc)
 
 	level := (perc / 100) * 4
-	fmt.Fprintf(w, "\nYour YOLO level: %d out of %d\n", (perc/100)*4, 4)
+	fmt.Fprintf(w, "\nYour YOLO compliance level: %d\n", maxLevel)
 
-	return level, nil
+	return level
 }
 
 func showBanner(w io.Writer) {
@@ -180,9 +188,6 @@ func main() {
 		V4Client: v4c,
 	}
 
-	level, err := runChecks(ctx, os.Stdout, cf)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	level := runChecks(ctx, os.Stdout, cf)
 	os.Exit(level)
 }

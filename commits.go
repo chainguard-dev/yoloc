@@ -121,19 +121,6 @@ type User struct {
 	Login string
 }
 
-type RepoAssociation int32
-
-const (
-	RepoAssociationCollaborator RepoAssociation = iota
-	RepoAssociationContributor
-	RepoAssociationFirstTimer
-	RepoAssociationFirstTimeContributor
-	RepoAssociationMannequin
-	RepoAssociationMember
-	RepoAssociationNone
-	RepoAssociationOwner
-)
-
 func Commits(client *githubv4.Client, repoOwner, repoName string, branch string) ([]Commit, error) {
 	query := &graphqlData{}
 	vars := map[string]interface{}{
@@ -204,7 +191,6 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 						//	log.Printf("#%d: found approval: %v", pr.Number, review)
 						approved = true
 					}
-
 				}
 				break
 			}
@@ -226,7 +212,6 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 			if commit.CommittedDate.Before(ageCutoff) {
 				break
 			}
-
 		}
 
 		if len(ret) > maxCommits {

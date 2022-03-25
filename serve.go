@@ -22,7 +22,7 @@ type ServerConfig struct {
 	V4Client *githubv4.Client
 }
 
-func serve(ctx context.Context, sc *ServerConfig) {
+func serve(_ context.Context, sc *ServerConfig) {
 	s := &Server{V4Client: sc.V4Client}
 	http.HandleFunc("/", s.Root())
 	http.HandleFunc("/healthz", s.Healthz())
@@ -48,9 +48,6 @@ func (s *Server) Root() http.HandlerFunc {
 
 		repo := *repoFlag
 		image := *imageFlag
-		if image == "" {
-			image = "triageparty/triage-party"
-		}
 		work := false
 
 		if len(r.URL.Query()["repo"]) > 0 {
@@ -69,7 +66,7 @@ func (s *Server) Root() http.HandlerFunc {
 
 		if work {
 			klog.Infof("Running checks for %s / %s", repo, image)
-			_, err = runChecks(r.Context(), bw, &Config{
+			runChecks(r.Context(), bw, &Config{
 				Github:   repo,
 				Image:    image,
 				V4Client: s.V4Client,
@@ -122,6 +119,7 @@ func (s *Server) Threadz() http.HandlerFunc {
 		}
 	}
 }
+
 func stack() []byte {
 	buf := make([]byte, 1024)
 	for {
