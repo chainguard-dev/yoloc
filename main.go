@@ -12,8 +12,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/common-nighthawk/go-figure"
+	au "github.com/logrusorgru/aurora"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
@@ -24,22 +24,17 @@ var (
 	serveFlag  = flag.Bool("serve", false, "yoloc webserver mode")
 	portFlag   = flag.Int("port", 8080, "serve yoloc on this port")
 	shhgitFlag = flag.String("sshgit-config", "shhgit.yaml", "path to shhgit config")
-
-	ckS = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
-	suS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00FF00"))
-	erS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0000"))
-	faS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0099"))
-	paS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFFF00"))
 )
 
 type Checker func(context.Context, *Config) ([]*Result, error)
+type Colorizer func(arc interface{}) au.Value
 
-func checkBox(w io.Writer, s lipgloss.Style, mark string, msg string) {
+func checkBox(w io.Writer, c Colorizer, mark string, msg string) {
 	fmt.Fprintln(w,
-		ckS.Render("  [")+
-			s.Render(mark)+
-			ckS.Render("] ")+
-			s.Render(msg))
+		au.BrightBlack("  ["),
+		c(mark),
+		au.BrightBlack("] "),
+		c(msg))
 }
 
 func fname(i interface{}) string {
@@ -49,40 +44,45 @@ func fname(i interface{}) string {
 func personality(w io.Writer, perc int) {
 	fig := ""
 	desc := ""
+	color := au.White
 	switch {
 	case perc == 0:
 		fig = figure.NewFigure("Dr. Fauci", "", true).String()
 		desc = "Measured safety. YOLO FAIL!"
 	case perc > 75:
+		color = au.BrightGreen
 		fig = figure.NewFigure("LeeRoy Jenkins", "", true).String()
 		desc = "Do your thang, LeeRoy!"
 	case perc > 50:
+		color = au.BrightYellow
 		fig = figure.NewFigure("Joan de Arc", "", true).String()
 		desc = "She did WHAT?"
 	case perc > 25:
+		color = au.BrightMagenta
 		fig = figure.NewFigure("Jimmy Carter", "", true).String()
 		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
+		color = au.BrightRed
 		fig = figure.NewFigure("Allan Pollock", "", true).String()
 		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
 	}
 
-	fmt.Fprintf(w, "\n\nYour YOLO personality:\n%s\n>> %s\n", fig, desc)
+	fmt.Fprintf(w, "\n\nYour YOLO personality:\n%s\n>> %s\n", color(fig), desc)
 
 }
 
 func printResult(w io.Writer, n string, r *Result, err error) {
 	switch {
 	case err != nil:
-		checkBox(w, erS, "error", fmt.Sprintf("%s failed: %v", n, err))
+		checkBox(w, au.BrightRed, "error", fmt.Sprintf("%s failed: %v", n, err))
 	case r.Score == r.Max: // They really YOLO
-		checkBox(w, suS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, au.BrightGreen, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
 	case r.Score == 0: // Too good
-		checkBox(w, faS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, au.Magenta, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
 	case r.Score > 0:
-		checkBox(w, paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, au.BrightYellow, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
 	default:
-		checkBox(w, paS, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s: %s", n, r.Msg))
+		checkBox(w, au.White, fmt.Sprintf("%2d/%2d", r.Score, r.Max), fmt.Sprintf("%s", r.Msg))
 
 	}
 
@@ -147,7 +147,7 @@ func showBanner(w io.Writer) {
 		}
 	}
 
-	fmt.Fprintln(w, suS.Render(fmt.Sprintf(`
+	fmt.Fprintln(w, au.BrightGreen(fmt.Sprintf(`
              |
    |  |  _ \ |  _ \  _|
   \_, |\___/_|\___/\__|        v0.0-%7.7s
