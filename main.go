@@ -19,10 +19,11 @@ import (
 )
 
 var (
-	repoFlag  = flag.String("repo", "google/triage-party", "Github repo to check")
-	imageFlag = flag.String("image", "", "image to check")
-	serveFlag = flag.Bool("serve", false, "yoloc webserver mode")
-	portFlag  = flag.Int("port", 8080, "serve yoloc on this port")
+	repoFlag   = flag.String("repo", "google/triage-party", "Github repo to check")
+	imageFlag  = flag.String("image", "", "image to check")
+	serveFlag  = flag.Bool("serve", false, "yoloc webserver mode")
+	portFlag   = flag.Int("port", 8080, "serve yoloc on this port")
+	shhgitFlag = flag.String("sshgit-config", "shhgit.yaml", "path to shhgit config")
 
 	ckS = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
 	suS = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00FF00"))
@@ -98,15 +99,20 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	fmt.Fprintf(w, "Analyzing %s %s\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
-		CheckCommits,
-		CheckSBOM,
-		CheckSignedImage,
-		CheckReleaser,
+		// CheckCommits,
+		// CheckSBOM,
+		CheckPrivateKeys,
+		// CheckSignedImage,
+		//CheckReleaser,
 	}
 
 	for _, c := range checkers {
 		n := fname(c)
 		rs, err := c(ctx, cf)
+		if err != nil {
+			printResult(w, n, nil, err)
+			continue
+		}
 		for _, r := range rs {
 			if r != nil {
 				score += r.Score

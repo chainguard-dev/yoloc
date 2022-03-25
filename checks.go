@@ -180,16 +180,6 @@ func CheckCommits(_ context.Context, c *Config) ([]*Result, error) {
 	return res, nil
 }
 
-func CheckPrivateKeys(_ context.Context, c *Config) ([]*Result, error) {
-	max := 10
-	r := &Result{
-		Score: max,
-		Max:   max,
-		Msg:   "Found 1 things that look like private keys",
-	}
-	return []*Result{r}, nil
-}
-
 func CheckDependencies(_ context.Context, c *Config) ([]*Result, error) {
 	max := 10
 	r := &Result{
