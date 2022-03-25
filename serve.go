@@ -46,8 +46,8 @@ func (s *Server) Root() http.HandlerFunc {
 			return
 		}
 
-		repo := "chainguard-dev/yolo"
-		image := "tstromberg/yoloc"
+		repo := *repoFlag
+		image := *imageFlag
 		work := false
 
 		if len(r.URL.Query()["repo"]) > 0 {
@@ -72,7 +72,7 @@ func (s *Server) Root() http.HandlerFunc {
 				V4Client: s.V4Client,
 			})
 		} else {
-			bw.Write([]byte("\nWaiting for submission ...\n"))
+			bw.Write([]byte("\nPatiently waiting for you to click that YOLO! button ...\n"))
 		}
 
 		bw.Flush()

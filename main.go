@@ -99,11 +99,11 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	fmt.Fprintf(w, "Analyzing %s %s\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
-		// CheckCommits,
-		// CheckSBOM,
+		CheckCommits,
+		CheckSBOM,
 		CheckPrivateKeys,
-		// CheckSignedImage,
-		//CheckReleaser,
+		CheckSignedImage,
+		CheckReleaser,
 	}
 
 	for _, c := range checkers {

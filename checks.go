@@ -225,13 +225,3 @@ func CheckReleaser(_ context.Context, c *Config) ([]*Result, error) {
 	}
 	return res, nil
 }
-
-func CheckArtifactSignatures(_ context.Context, c *Config) ([]*Result, error) {
-	max := 10
-	r := &Result{
-		Score: max,
-		Max:   max,
-		Msg:   "Found 1 things that look like private keys",
-	}
-	return []*Result{r}, nil
-}
