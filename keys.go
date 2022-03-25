@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	shhgit "github.com/eth0izzle/shhgit/core"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
@@ -28,14 +30,20 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 			return nil, fmt.Errorf("clone: %w", err)
 		}
 	} else {
-		_, err := git.PlainCloneContext(ctx, dest, false, &git.CloneOptions{
+		opts := &git.CloneOptions{
 			URL:               fmt.Sprintf("https://github.com/%s.git", c.Github),
 			SingleBranch:      true,
 			Depth:             1,
 			RecurseSubmodules: git.NoRecurseSubmodules,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("clone: %w", err)
+			ReferenceName:     plumbing.NewBranchReferenceName(c.Branch),
+		}
+
+		if _, err := git.PlainCloneContext(ctx, dest, false, opts); err != nil {
+			log.Printf("error: %v", err)
+			opts.ReferenceName = plumbing.NewBranchReferenceName("master")
+			if _, err := git.PlainCloneContext(ctx, dest, false, opts); err != nil {
+				return nil, fmt.Errorf("clone: %w", err)
+			}
 		}
 
 	}

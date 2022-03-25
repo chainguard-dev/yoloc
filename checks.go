@@ -24,6 +24,7 @@ type Config struct {
 	V4Client *githubv4.Client
 	Owner    string
 	Name     string
+	Branch   string
 }
 
 type Result struct {
@@ -124,13 +125,18 @@ func CheckCommits(_ context.Context, c *Config) ([]*Result, error) {
 	pr := 0
 	reviewed := 0
 
-	cs, err := Commits(c.V4Client, c.Owner, c.Name, "main")
+	if c.Branch == "" {
+		c.Branch = "main"
+	}
+
+	cs, err := Commits(c.V4Client, c.Owner, c.Name, c.Branch)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get commits: %w", err)
 	}
 
 	if len(cs) == 0 {
-		cs, err = Commits(c.V4Client, c.Owner, c.Name, "master")
+		c.Branch = "master"
+		cs, err = Commits(c.V4Client, c.Owner, c.Name, c.Branch)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get commits: %w", err)
 		}
