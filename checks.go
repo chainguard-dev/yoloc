@@ -140,6 +140,7 @@ func CheckSignedImage(ctx context.Context, c *Config) ([]*Result, error) {
 	}
 
 	for _, ri := range images {
+		//	klog.Infof("MAYBE: %s", ri)
 		i := ri
 
 		if !strings.Contains(i, ":") {

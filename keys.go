@@ -63,8 +63,11 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 	images := map[string]bool{}
 
 	for _, f := range found {
-		if f.kind == "image" && strings.Contains(f.content, c.Name) {
-			images[f.content] = true
+		if f.kind == "image" {
+			//		klog.Infof("POSSIBLE IMAGE: %s", f.content)
+			if strings.Contains(f.content, c.Name) || strings.Contains(f.content, c.Owner) {
+				images[f.content] = true
+			}
 		}
 
 		if f.kind == "key" && !strings.Contains(f.path, "test") {
@@ -94,6 +97,11 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 		}
 
 		try = fmt.Sprintf("%s-cli", c.Name)
+		if !strings.Contains(i, try) {
+			c.FoundImages = append(c.FoundImages, i+"/"+try)
+		}
+
+		try = fmt.Sprintf("%s-client", c.Name)
 		if !strings.Contains(i, try) {
 			c.FoundImages = append(c.FoundImages, i+"/"+try)
 		}

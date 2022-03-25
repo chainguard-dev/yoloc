@@ -68,7 +68,7 @@ func personality(w io.Writer, perc int) {
 		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
 		color = au.BrightRed
-		fig = figure.NewFigure("William Jennings Bryan", "", true).String()
+		fig = figure.NewFigure("W. Jennings Bryan", "", true).String()
 		desc = "Doesn't drink. Doesn't smoke. Doesn't chew. Doesn't swear. Ran for president multiple times."
 	}
 
