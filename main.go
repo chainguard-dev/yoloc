@@ -67,7 +67,7 @@ func personality(w io.Writer, perc int) {
 		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
 	}
 
-	fmt.Fprintf(w, "\n\nYour YOLO personality:\n%s\n>> %s\n", color(fig), desc)
+	fmt.Fprintf(w, "Your YOLO personality:\n%s\n>> %s\n", color(fig), desc)
 
 }
 
@@ -96,7 +96,7 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 	cf.Owner = parts[0]
 	cf.Name = parts[1]
 
-	fmt.Fprintf(w, "Analyzing %s %s\n", cf.Github, cf.Image)
+	fmt.Fprintf(w, "Analyzing %s %s ...\n", cf.Github, cf.Image)
 
 	checkers := []Checker{
 		CheckCommits,
@@ -127,7 +127,7 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) (int, error) {
 		perc = int((float64(score) / float64(maxScore)) * 100)
 	}
 
-	fmt.Fprintf(w, "\nYour score: %d out of %d (%d%%)\n", score, maxScore, perc)
+	fmt.Fprintf(w, "\nYour YOLO score: %d out of %d (%d%%)\n", score, maxScore, perc)
 	personality(w, perc)
 
 	level := (perc / 100) * 4

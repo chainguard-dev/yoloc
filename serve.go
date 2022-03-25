@@ -48,6 +48,9 @@ func (s *Server) Root() http.HandlerFunc {
 
 		repo := *repoFlag
 		image := *imageFlag
+		if image == "" {
+			image = "triageparty/triage-party"
+		}
 		work := false
 
 		if len(r.URL.Query()["repo"]) > 0 {

@@ -2,13 +2,21 @@
 <html lang="en">
 <head><title>{{ .Title }}</title>
 <style>
-
 body {
   font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", Courier, monospace;
+  background-color: #E5E5E5;
 }
 
 #main {
-  background-color: #E000E5;
+  background-color: #FCFCFC;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 65em;
+  padding: 2em;
+}
+
+#box {
+  background-color: #F070F5;
   border-radius: 5px;
   padding: 1em;
   padding-top: 1em;
@@ -54,6 +62,11 @@ pre {
   to {
     visibility: hidden;
   }
+}
+
+.pending {
+  padding: 2em;
+  animation: blink-animation 1s steps(3, start) infinite;
 }
 
 .term-fg1 { } /* don't bold beccause it looks weird */
@@ -336,31 +349,41 @@ pre {
 </head>
 
 <body>
-  <h1>YOLO(c)</h1>
+  <section id="main">
 
-    <section id="main">
-    <form action="/" method="get" class="form-example">
-        <label for="name">$ yoloc --repo </label>
-        <input type="text" name="repo" id="repo" value="{{ .Repo }}" required>
-        <label for="email"> --image</label>
-        <input type="text" name="image" id="repo" value="{{ .Image }}">
-        <input type="submit" value="YOLO!" onclick=waiting()>
-    </form>
+    <header>
+      <h1>YOLOcheck</h1>
+      <p>Validate adherance to <a href="???">YOLO&trade; Levels: Insecure Your Software Supply Chain!</a></p>
+    </header>
 
-    <pre id="result">
-    {{ .Out }}
-    </pre>
+    <section id="box">
+      <form action="/" method="get" class="form-example">
+          <label for="name">$ yoloc --repo </label>
+          <input type="text" name="repo" id="repo" value="{{ .Repo }}" required>
+          <label for="email"> --image</label>
+          <input type="text" name="image" id="repo" value="{{ .Image }}">
+          <input type="submit" value="YOLO!" onclick=waiting()>
+      </form>
 
-    <footer>
-      For more info, see <a href="https://github.com/chainguard-dev/yoloc">github.com/chainguard-dev/yoloc</a>
-    </footer>
+      <pre>
+      <div id="result">{{ .Out }}</div>
+      </pre>
+
+      <footer>
+        <ul>
+        <li>For help improving your SLSA level, see <a href="https://chainguard-dev/">chainguard.dev</a></li>
+        <li>For yoloc source code, see <a href="https://github.com/chainguard-dev/yoloc">github.com/chainguard-dev/yoloc</a></li>
+        </ul>
+      </footer>
 
     </section>
+</section>
 </body>
 </html>
 
 <script language="javascript">
 function waiting() {
     document.getElementById('result').innerHTML = "Submission received. Be patient - this may take a minute!";
+    document.getElementById('result').className = "pending";
 }
 </script>
