@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	repoFlag   = flag.String("repo", "google/triage-party", "Github repo to check")
+	repoFlag   = flag.String("repo", "sigstore/fulcio", "Github repo to check")
 	imageFlag  = flag.String("image", "", "image to check")
 	serveFlag  = flag.Bool("serve", false, "yoloc webserver mode")
 	portFlag   = flag.Int("port", 8080, "serve yoloc on this port")
