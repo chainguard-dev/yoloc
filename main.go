@@ -57,11 +57,11 @@ func personality(w io.Writer, perc int) {
 	case perc > 60:
 		color = au.BrightRed
 		fig = figure.NewFigure("Allan Pollock", "", true).String()
-		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale"
+		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale."
 	case perc > 40:
 		color = au.BrightYellow
-		fig = figure.NewFigure("Joan de Arc", "", true).String()
-		desc = "She did WHAT?"
+		fig = figure.NewFigure("Joan of Arc", "", true).String()
+		desc = "Led France into battle without a sword."
 	case perc > 20:
 		color = au.BrightMagenta
 		fig = figure.NewFigure("Jimmy Carter", "", true).String()
