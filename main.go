@@ -78,8 +78,10 @@ func personality(w io.Writer, perc int) {
 func badge(w io.Writer, level int) {
 	color := ""
 	switch level {
-	case 1:
+	case 0:
 		color = "brightgreen"
+	case 1:
+		color = "green"
 	case 2:
 		color = "yellow"
 	case 3:
