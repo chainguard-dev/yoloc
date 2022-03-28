@@ -75,6 +75,25 @@ func personality(w io.Writer, perc int) {
 	fmt.Fprintf(w, "Your YOLO personality:\n%s\n>> %s\n", color(fig), desc)
 }
 
+func badge(w io.Writer, level int) {
+	color := ""
+	switch level {
+	case 0:
+		color = "brightgreen"
+	case 1:
+		color = "green"
+	case 2:
+		color = "yellow"
+	case 3:
+		color = "orange"
+	case 4:
+		color = "red"
+	}
+
+	badge := fmt.Sprintf("https://img.shields.io/badge/YOLO-%d-%s", level, color)
+	fmt.Fprintf(w, "\nTo add this badge to a GitHub README.md:\n[![YOLO Level](%s)](https://yolo.tools)\n\n", badge)
+}
+
 func printResult(w io.Writer, n string, r *Result, err error) {
 	switch {
 	case err != nil:
@@ -138,9 +157,11 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 	fmt.Fprintf(w, "\nYour YOLO score: %d out of %d (%d%%)\n", score, maxScore, perc)
 	personality(w, perc)
 
-	level := (perc / 100) * 4
 	fmt.Fprintf(w, "\nYour YOLO compliance level: %d\n", maxLevel)
 
+	badge(w, maxLevel)
+
+	level := (perc / 100) * 4
 	return level
 }
 
