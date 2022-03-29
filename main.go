@@ -48,27 +48,27 @@ func personality(w io.Writer, perc int) {
 	color := au.White
 	switch {
 	case perc == 0:
-		fig = figure.NewFigure("Dr. Fauci", "", true).String()
+		fig = figure.NewFigure("Dr. Fauci", "doom", true).String()
 		desc = "Measured safety. YOLO FAIL!"
 	case perc > 75:
 		color = au.BrightGreen
-		fig = figure.NewFigure("LeeRoy Jenkins", "", true).String()
+		fig = figure.NewFigure("LeeRoy Jenkins", "speed", true).String()
 		desc = "Do your thang, LeeRoy!"
 	case perc > 60:
 		color = au.BrightRed
-		fig = figure.NewFigure("Allan Pollock", "", true).String()
+		fig = figure.NewFigure("Allan Pollock", "colossal", true).String()
 		desc = "Borrowed a fighter jet, buzzed the Tower Bridge, and lived to tell the tale."
 	case perc > 40:
 		color = au.BrightYellow
-		fig = figure.NewFigure("Joan of Arc", "", true).String()
+		fig = figure.NewFigure("Joan of Arc", "univers", true).String()
 		desc = "Led France into battle without a sword."
 	case perc > 20:
 		color = au.BrightMagenta
-		fig = figure.NewFigure("Jimmy Carter", "", true).String()
+		fig = figure.NewFigure("Jimmy Carter", "bigchief", true).String()
 		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
 		color = au.BrightRed
-		fig = figure.NewFigure("W. Jennings Bryan", "", true).String()
+		fig = figure.NewFigure("W. Jennings Bryan", "calgphy2", true).String()
 		desc = "Doesn't drink. Doesn't smoke. Doesn't chew. Doesn't swear. Ran for president multiple times."
 	}
 
