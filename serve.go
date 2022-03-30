@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"github.com/buildkite/terminal-to-html/v3"
+	lru "github.com/hnlq715/golang-lru"
 	"github.com/shurcooL/githubv4"
 	"k8s.io/klog/v2"
 )
@@ -20,10 +21,11 @@ var yoloTmpl string
 type ServerConfig struct {
 	Addr     string
 	V4Client *githubv4.Client
+	Cache    *lru.ARCCache
 }
 
 func serve(_ context.Context, sc *ServerConfig) {
-	s := &Server{V4Client: sc.V4Client}
+	s := &Server{V4Client: sc.V4Client, Cache: sc.Cache}
 	http.HandleFunc("/", s.Root())
 	http.HandleFunc("/healthz", s.Healthz())
 	http.HandleFunc("/threadz", s.Threadz())
@@ -33,6 +35,7 @@ func serve(_ context.Context, sc *ServerConfig) {
 
 type Server struct {
 	V4Client *githubv4.Client
+	Cache    *lru.ARCCache
 }
 
 func (s *Server) Root() http.HandlerFunc {
@@ -70,6 +73,7 @@ func (s *Server) Root() http.HandlerFunc {
 				Github:   repo,
 				Image:    image,
 				V4Client: s.V4Client,
+				Cache:    s.Cache,
 			})
 		} else {
 			bw.Write([]byte("Patiently waiting for you to click that YOLO! button ...\n"))

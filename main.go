@@ -10,8 +10,10 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/common-nighthawk/go-figure"
+	lru "github.com/hnlq715/golang-lru"
 	au "github.com/logrusorgru/aurora"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
@@ -194,19 +196,22 @@ func main() {
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
 	v4c := githubv4.NewClient(httpClient)
+	l, _ := lru.NewARCWithExpire(1024, 4*time.Hour)
 
 	if *serveFlag {
 		addr := fmt.Sprintf(":%s", os.Getenv("PORT"))
 		if addr == ":" {
 			addr = fmt.Sprintf(":%d", *portFlag)
 		}
-		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c})
+
+		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l})
 	}
 
 	cf := &Config{
 		Github:   *repoFlag,
 		Image:    *imageFlag,
 		V4Client: v4c,
+		Cache:    l,
 	}
 
 	level := runChecks(ctx, os.Stdout, cf)

@@ -9,6 +9,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-containerregistry v0.8.1-0.20220209165246-a44adc326839
 	github.com/hashicorp/go-version v1.4.0
+	github.com/hnlq715/golang-lru v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
 	github.com/sigstore/cosign v1.6.0

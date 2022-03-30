@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
+	lru "github.com/hnlq715/golang-lru"
 	"github.com/shurcooL/githubv4"
 )
 
@@ -121,7 +123,14 @@ type User struct {
 	Login string
 }
 
-func Commits(client *githubv4.Client, repoOwner, repoName string, branch string) ([]Commit, error) {
+func asSha256(o interface{}) string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", o)))
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func Commits(client *githubv4.Client, repoOwner, repoName string, branch string, l *lru.ARCCache) ([]Commit, error) {
 	query := &graphqlData{}
 	vars := map[string]interface{}{
 		"owner":                 githubv4.String(repoOwner),
@@ -135,6 +144,12 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 
 	ageCutoff := time.Now().Add(maxCommitAge * -1)
 	ret := []Commit{}
+
+	varHashed := asSha256(vars)
+	cached, exist := l.Get(varHashed)
+	if exist {
+		return cached.([]Commit), nil
+	}
 
 	for {
 		err := client.Query(context.Background(), &query, vars)
@@ -222,6 +237,8 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string)
 			break
 		}
 		vars["commitsCursor"] = githubv4.NewString(query.Repository.Object.Commit.History.PageInfo.EndCursor)
+		l.Add(varHashed, ret)
 	}
+
 	return ret, nil
 }
