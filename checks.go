@@ -14,18 +14,21 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/hashicorp/go-version"
+	lru "github.com/hnlq715/golang-lru"
 	"github.com/shurcooL/githubv4"
+	"k8s.io/klog/v2"
+
 	"github.com/sigstore/cosign/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/pkg/cosign"
 	ociremote "github.com/sigstore/cosign/pkg/oci/remote"
 	rekor "github.com/sigstore/rekor/pkg/client"
-	"k8s.io/klog/v2"
 )
 
 type Config struct {
 	Github      string
 	Image       string
 	V4Client    *githubv4.Client
+	Cache       *lru.ARCCache
 	Owner       string
 	Name        string
 	Branch      string
@@ -205,14 +208,14 @@ func CheckCommits(_ context.Context, c *Config) ([]*Result, error) {
 		c.Branch = "main"
 	}
 
-	cs, err := Commits(c.V4Client, c.Owner, c.Name, c.Branch)
+	cs, err := Commits(c.V4Client, c.Owner, c.Name, c.Branch, c.Cache)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get commits: %w", err)
 	}
 
 	if len(cs) == 0 {
 		c.Branch = "master"
-		cs, err = Commits(c.V4Client, c.Owner, c.Name, c.Branch)
+		cs, err = Commits(c.V4Client, c.Owner, c.Name, c.Branch, c.Cache)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get commits: %w", err)
 		}

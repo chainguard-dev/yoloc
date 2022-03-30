@@ -10,8 +10,10 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/common-nighthawk/go-figure"
+	lru "github.com/hnlq715/golang-lru"
 	au "github.com/logrusorgru/aurora"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
@@ -200,7 +202,8 @@ func main() {
 		if addr == ":" {
 			addr = fmt.Sprintf(":%d", *portFlag)
 		}
-		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c})
+		l, _ := lru.NewARCWithExpire(1024, 4*time.Hour)
+		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l})
 	}
 
 	cf := &Config{
