@@ -196,13 +196,14 @@ func main() {
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
 	v4c := githubv4.NewClient(httpClient)
+	l, _ := lru.NewARCWithExpire(1024, 4*time.Hour)
 
 	if *serveFlag {
 		addr := fmt.Sprintf(":%s", os.Getenv("PORT"))
 		if addr == ":" {
 			addr = fmt.Sprintf(":%d", *portFlag)
 		}
-		l, _ := lru.NewARCWithExpire(1024, 4*time.Hour)
+
 		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l})
 	}
 
@@ -210,6 +211,7 @@ func main() {
 		Github:   *repoFlag,
 		Image:    *imageFlag,
 		V4Client: v4c,
+		Cache:    l,
 	}
 
 	level := runChecks(ctx, os.Stdout, cf)
