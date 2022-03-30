@@ -127,7 +127,7 @@ func runShhGit(ctx context.Context, dir string) ([]match, error) {
 	s, err := shhgit.NewSession(ctx, &shhgit.Options{
 		Local:           &dir,
 		MaximumFileSize: &maxSize,
-		ConfigName:      shhgitFlag,
+		ConfigName:      sshgitFlag,
 		ConfigPath:      &koData,
 	})
 	if err != nil {
