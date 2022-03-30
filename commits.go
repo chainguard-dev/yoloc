@@ -148,7 +148,6 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string,
 	varHashed := asSha256(vars)
 	cached, exist := l.Get(varHashed)
 	if exist {
-		fmt.Println("cached yayyy")
 		return cached.([]Commit), nil
 	}
 
