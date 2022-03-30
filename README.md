@@ -4,7 +4,7 @@ YOLO-level verifier
 
 ## Usage
 
-* Web: https://yoloc-6zw6p3u7ya-uc.a.run.app/
+* Web: https://yolo.tools/
 * CLI: `yoloc --repo <github repo> --image <image path>`
 
 ## Requirements
