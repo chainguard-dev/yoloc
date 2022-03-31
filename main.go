@@ -17,18 +17,20 @@ import (
 	au "github.com/logrusorgru/aurora"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
+	"k8s.io/klog/v2"
 )
 
 var (
-	repoFlag   = flag.String("repo", "sigstore/fulcio", "Github repo to check")
-	imageFlag  = flag.String("image", "", "image to check")
-	serveFlag  = flag.Bool("serve", false, "yoloc webserver mode")
-	portFlag   = flag.Int("port", 8080, "serve yoloc on this port")
-	sshgitFlag = flag.String("sshgit-config", "sshgit.yaml", "path to sshgit config")
+	repoFlag    = flag.String("repo", "sigstore/fulcio", "Github repo to check")
+	imageFlag   = flag.String("image", "", "image to check")
+	serveFlag   = flag.Bool("serve", false, "yoloc webserver mode")
+	portFlag    = flag.Int("port", 8080, "serve yoloc on this port")
+	persistFlag = flag.String("persist", "", "persistence layer to use (local, firestore, none)")
+	sshgitFlag  = flag.String("sshgit-config", "sshgit.yaml", "path to sshgit config")
 )
 
 type (
-	Checker   func(context.Context, *Config) ([]*Result, error)
+	Checker   func(context.Context, *Config) ([]Result, error)
 	Colorizer func(arc interface{}) au.Value
 )
 
@@ -96,7 +98,7 @@ func badge(w io.Writer, level int) {
 	fmt.Fprintf(w, "\nTo add this badge to a GitHub README.md:\n[![YOLO Level](%s)](https://yolo.tools)\n\n", badge)
 }
 
-func printResult(w io.Writer, n string, r *Result, err error) {
+func printResult(w io.Writer, n string, r Result, err error) {
 	switch {
 	case err != nil:
 		checkBox(w, au.BrightRed, "error", fmt.Sprintf("%s failed: %v", n, err))
@@ -133,13 +135,20 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 
 	for _, c := range checkers {
 		n := fname(c)
-		rs, err := c(ctx, cf)
+		key := fmt.Sprintf("%s@%s", n, cf.Github)
+
+		rs, err := cf.Persist.Get(ctx, key)
+		if err != nil || rs == nil {
+			rs, err = c(ctx, cf)
+			cf.Persist.Set(ctx, key, rs)
+		}
+
 		if err != nil {
-			printResult(w, n, nil, err)
+			printResult(w, n, Result{}, err)
 			continue
 		}
 		for _, r := range rs {
-			if r != nil {
+			if r.Score > 0 {
 				score += r.Score
 				maxScore += r.Max
 				// For fun, we assign your level to be the highest observed
@@ -207,11 +216,17 @@ func main() {
 		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l})
 	}
 
+	persist, err := NewPersist(ctx, *persistFlag)
+	if err != nil {
+		klog.Fatalf("persist: %v", err)
+	}
+
 	cf := &Config{
 		Github:   *repoFlag,
 		Image:    *imageFlag,
 		V4Client: v4c,
 		Cache:    l,
+		Persist:  persist,
 	}
 
 	level := runChecks(ctx, os.Stdout, cf)

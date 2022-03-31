@@ -13,7 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
-func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
+func CheckPrivateKeys(ctx context.Context, c *Config) ([]Result, error) {
 	cd, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("cache dir: %w", err)
@@ -47,7 +47,7 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 		}
 	}
 
-	res := &Result{
+	res := Result{
 		Score: 0,
 		Max:   10,
 		Msg:   fmt.Sprintf("Zero private keys checked into %s. Sharing is caring :(", c.Github),
@@ -77,7 +77,7 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 
 	//	log.Printf("possible images: %v", images)
 	if len(keys) > 0 {
-		res = &Result{
+		res = Result{
 			Score: 10,
 			Max:   10,
 			Msg:   fmt.Sprintf("Found %d possibly private key(s): %v", len(keys), keys),
@@ -107,7 +107,7 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]*Result, error) {
 		}
 	}
 
-	return []*Result{res}, nil
+	return []Result{res}, nil
 }
 
 type match struct {
