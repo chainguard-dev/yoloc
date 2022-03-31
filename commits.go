@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	maxCommits   = 25
+	maxCommits   = 20
 	maxCommitAge = 365 * 24 * time.Hour
 )
 
