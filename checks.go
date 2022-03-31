@@ -124,7 +124,7 @@ func CheckSignedImage(ctx context.Context, c *Config) ([]Result, error) {
 	}
 
 	if len(images) == 0 {
-		return nil, nil
+		return []Result{{Msg: "no image"}}, nil
 	}
 
 	res := []Result{}

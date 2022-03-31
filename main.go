@@ -135,12 +135,17 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 
 	for _, c := range checkers {
 		n := fname(c)
-		key := fmt.Sprintf("%s@%s", n, cf.Github)
+		key := fmt.Sprintf("%s@%s", cf.Github, n)
 
 		rs, err := cf.Persist.Get(ctx, key)
 		if err != nil || rs == nil {
+			if err != nil {
+				klog.Errorf("get err: %v", err)
+			}
 			rs, err = c(ctx, cf)
-			cf.Persist.Set(ctx, key, rs)
+			if err := cf.Persist.Set(ctx, key, rs); err != nil {
+				klog.Errorf("set err: %v", err)
+			}
 		}
 
 		if err != nil {
@@ -148,6 +153,9 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 			continue
 		}
 		for _, r := range rs {
+			if r.Max == 0 {
+				continue
+			}
 			if r.Score > 0 {
 				score += r.Score
 				maxScore += r.Max
