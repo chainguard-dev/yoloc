@@ -72,7 +72,7 @@ func personality(w io.Writer, perc int) {
 		desc = "Walking into a failed nuclear reactor? That's just crazy."
 	case perc > 0:
 		color = au.BrightRed
-		fig = figure.NewFigure("W. Jennings Bryan", "calgphy2", true).String()
+		fig = figure.NewFigure("W. J. Bryan", "calgphy2", true).String()
 		desc = "Doesn't drink. Doesn't smoke. Doesn't chew. Doesn't swear. Ran for president multiple times."
 	}
 
@@ -148,7 +148,8 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 			}
 		}
 
-		if err != nil {
+		if err != nil {			}
+
 			printResult(w, n, Result{}, err)
 			continue
 		}
@@ -156,13 +157,11 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 			if r.Max == 0 {
 				continue
 			}
-			if r.Score > 0 {
-				score += r.Score
-				maxScore += r.Max
-				// For fun, we assign your level to be the highest observed
-				if r.Score > 0 && r.Level > maxLevel {
-					maxLevel = r.Level
-				}
+			score += r.Score
+			maxScore += r.Max
+			// For fun, we assign your level to be the highest observed
+			if r.Score > 0 && r.Level > maxLevel {
+				maxLevel = r.Level
 			}
 			printResult(w, n, r, err)
 		}
