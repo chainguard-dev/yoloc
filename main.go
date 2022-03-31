@@ -116,6 +116,10 @@ func printResult(w io.Writer, n string, r Result, err error) {
 }
 
 func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
+	if !strings.Contains(cf.Github, "/") {
+		return -1
+	}
+
 	score := 0
 	maxScore := 0
 	cf.Github = strings.Replace(cf.Github, "https://github.com/", "", 1)

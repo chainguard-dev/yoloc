@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"runtime"
+	"strings"
 
 	"github.com/buildkite/terminal-to-html/v3"
 	lru "github.com/hnlq715/golang-lru"
@@ -62,6 +63,11 @@ func (s *Server) Root() http.HandlerFunc {
 		if len(r.URL.Query()["image"]) > 0 {
 			image = r.URL.Query()["image"][0]
 			work = true
+		}
+
+		if !strings.Contains(repo, "/") {
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		var bs bytes.Buffer
