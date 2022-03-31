@@ -148,11 +148,11 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 			}
 		}
 
-		if err != nil {			}
-
+		if err != nil {
 			printResult(w, n, Result{}, err)
 			continue
 		}
+
 		for _, r := range rs {
 			if r.Max == 0 {
 				continue
