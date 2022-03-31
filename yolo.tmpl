@@ -11,16 +11,16 @@ body {
   background-color: #FCFCFC;
   margin-left: auto;
   margin-right: auto;
-  max-width: 100em;
   padding: 2em;
+  width: min-content;
 }
 
 #box {
   background-color: #F560F5;
   border-radius: 5px;
   padding: 1em;
-  padding-top: 1em;
-  padding-right: 1em;
+  width: min-content;
+  min-width: 0;
 }
 
 form {
@@ -51,7 +51,9 @@ pre {
   font-size: 12px;
   line-height: 20px;
   padding-left: 20px;
-  white-space: pre-wrap;
+  padding-right: 20px;
+  width: fit-content;
+  min-width: 55em;
 }
 
 // From https://github.com/buildkite/terminal-to-html

@@ -19,3 +19,9 @@ YOLO-level verifier
 ```
 go install chainguard.dev/yoloc@latest
 ```
+
+## Running the webserver locally
+
+```
+GITHUB_TOKEN=ghp_nnrr3lmzqzy3rrr9rzunrp6rmzr99n3zs9zr go run .
+```
