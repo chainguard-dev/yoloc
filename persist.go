@@ -154,12 +154,12 @@ func (p *FirePersister) keyPath(key string) string {
 
 func (p *FirePersister) Get(ctx context.Context, key string) ([]Result, error) {
 	kp := p.keyPath(key)
-	klog.Infof("checking %s ...", kp)
+	//	klog.Infof("checking %s ...", kp)
 
 	doc := p.client.Doc(kp)
 	docsnap, err := doc.Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get: %w", err)
+		return nil, nil
 	}
 
 	data, err := docsnap.DataAt("blob")
