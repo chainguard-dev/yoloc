@@ -149,8 +149,10 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 				klog.Errorf("get err: %v", err)
 			}
 			rs, err = c(ctx, cf)
-			if err := cf.Persist.Set(ctx, key, rs); err != nil {
-				klog.Errorf("set err: %v", err)
+			if err != nil {
+				if err := cf.Persist.Set(ctx, key, rs); err != nil {
+					klog.Errorf("set err: %v", err)
+				}
 			}
 		}
 
