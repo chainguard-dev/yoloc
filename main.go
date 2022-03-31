@@ -214,6 +214,10 @@ func main() {
 	httpClient := oauth2.NewClient(context.Background(), src)
 	v4c := githubv4.NewClient(httpClient)
 	l, _ := lru.NewARCWithExpire(1024, 4*time.Hour)
+	persist, err := NewPersist(ctx, *persistFlag)
+	if err != nil {
+		klog.Fatalf("persist: %v", err)
+	}
 
 	if *serveFlag {
 		addr := fmt.Sprintf(":%s", os.Getenv("PORT"))
@@ -221,12 +225,7 @@ func main() {
 			addr = fmt.Sprintf(":%d", *portFlag)
 		}
 
-		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l})
-	}
-
-	persist, err := NewPersist(ctx, *persistFlag)
-	if err != nil {
-		klog.Fatalf("persist: %v", err)
+		serve(ctx, &ServerConfig{Addr: addr, V4Client: v4c, Cache: l, Persist: persist})
 	}
 
 	cf := &Config{

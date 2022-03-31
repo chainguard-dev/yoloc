@@ -22,10 +22,11 @@ type ServerConfig struct {
 	Addr     string
 	V4Client *githubv4.Client
 	Cache    *lru.ARCCache
+	Persist  Persister
 }
 
 func serve(_ context.Context, sc *ServerConfig) {
-	s := &Server{V4Client: sc.V4Client, Cache: sc.Cache}
+	s := &Server{V4Client: sc.V4Client, Cache: sc.Cache, Persist: sc.Persist}
 	http.HandleFunc("/", s.Root())
 	http.HandleFunc("/healthz", s.Healthz())
 	http.HandleFunc("/threadz", s.Threadz())
@@ -36,6 +37,7 @@ func serve(_ context.Context, sc *ServerConfig) {
 type Server struct {
 	V4Client *githubv4.Client
 	Cache    *lru.ARCCache
+	Persist  Persister
 }
 
 func (s *Server) Root() http.HandlerFunc {
@@ -74,6 +76,7 @@ func (s *Server) Root() http.HandlerFunc {
 				Image:    image,
 				V4Client: s.V4Client,
 				Cache:    s.Cache,
+				Persist:  s.Persist,
 			})
 		} else {
 			bw.Write([]byte("Patiently waiting for you to click that YOLO! button ...\n"))
