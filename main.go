@@ -80,10 +80,12 @@ func personality(w io.Writer, perc int) {
 }
 
 func badge(w io.Writer, level int) {
+	sign := "--"
 	color := ""
 	switch level {
 	case 0:
 		color = "brightgreen"
+		sign = ""
 	case 1:
 		color = "green"
 	case 2:
@@ -94,7 +96,7 @@ func badge(w io.Writer, level int) {
 		color = "red"
 	}
 
-	badge := fmt.Sprintf("https://img.shields.io/badge/YOLO-%d-%s", level, color)
+	badge := fmt.Sprintf("https://img.shields.io/badge/YOLO-%s%d-%s", sign, level, color)
 	fmt.Fprintf(w, "\nTo add this badge to a GitHub README.md:\n[![YOLO Level](%s)](https://yolo.tools)\n\n", badge)
 }
 
