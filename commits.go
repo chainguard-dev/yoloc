@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	maxCommits   = 200
+	maxCommits   = 25
 	maxCommitAge = 365 * 24 * time.Hour
 )
 
@@ -135,9 +135,9 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string,
 	vars := map[string]interface{}{
 		"owner":                 githubv4.String(repoOwner),
 		"name":                  githubv4.String(repoName),
-		"pullRequestsToAnalyze": githubv4.Int(10),
-		"commitsToAnalyze":      githubv4.Int(100),
-		"reviewsToAnalyze":      githubv4.Int(10),
+		"pullRequestsToAnalyze": githubv4.Int(50),
+		"commitsToAnalyze":      githubv4.Int(50),
+		"reviewsToAnalyze":      githubv4.Int(50),
 		"expression":            githubv4.String(branch),
 		"commitsCursor":         (*githubv4.String)(nil),
 	}
