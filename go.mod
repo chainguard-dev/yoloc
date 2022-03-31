@@ -3,6 +3,7 @@ module github.com/chainguard-dev/yoloc
 go 1.18
 
 require (
+	cloud.google.com/go/firestore v1.6.1
 	github.com/buildkite/terminal-to-html/v3 v3.6.1
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/eth0izzle/shhgit v0.0.0-20210225202122-65351a789931
