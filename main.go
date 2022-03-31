@@ -26,7 +26,7 @@ var (
 	serveFlag   = flag.Bool("serve", false, "yoloc webserver mode")
 	portFlag    = flag.Int("port", 8080, "serve yoloc on this port")
 	persistFlag = flag.String("persist", "", "persistence layer to use (local, firestore, none)")
-	sshgitFlag  = flag.String("sshgit-config", "sshgit.yaml", "path to sshgit config")
+	shhgitFlag  = flag.String("shhgit-config", "shhgit.yaml", "path to shhgit config")
 )
 
 type (
