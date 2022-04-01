@@ -303,7 +303,7 @@ func CheckReleaserV2(ctx context.Context, c *Config) ([]Result, error) {
 	if user := matches[1]; regexp.MustCompile(fmt.Sprintf("bot|action|release|build|jenkins|machine|auto|%s", c.Name)).MatchString(user) {
 		res = append(res, Result{Score: 0, Max: 10, Msg: fmt.Sprintf("Previous release was likely automated (%q)", user)})
 	} else {
-		res = append(res, Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (probably not automated)", user)})
+		res = append(res, Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (probably not fully automated)", user)})
 	}
 	return res, nil
 }
