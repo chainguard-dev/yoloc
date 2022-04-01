@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,7 +42,6 @@ func CheckPrivateKeys(ctx context.Context, c *Config) ([]Result, error) {
 		}
 
 		if _, err := git.PlainCloneContext(ctx, dest, false, opts); err != nil {
-			log.Printf("error: %v", err)
 			opts.ReferenceName = plumbing.NewBranchReferenceName("master")
 			if _, err := git.PlainCloneContext(ctx, dest, false, opts); err != nil {
 				return nil, fmt.Errorf("clone: %w", err)
