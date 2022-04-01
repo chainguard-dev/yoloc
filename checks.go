@@ -222,6 +222,11 @@ func CheckCommits(_ context.Context, c *Config) ([]Result, error) {
 		}
 	}
 
+	if len(cs) == 0 {
+		c.Branch = "unknown"
+		return []Result{{Msg: "No commits found"}}, nil
+	}
+
 	newest := time.Time{}
 	for _, co := range cs {
 		if co.CommittedDate.After(newest) {

@@ -14,6 +14,10 @@ import (
 )
 
 func CheckPrivateKeys(ctx context.Context, c *Config) ([]Result, error) {
+	if c.Branch == "unknown" {
+		return []Result{{Msg: "unknown branch"}}, nil
+	}
+
 	cd, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("cache dir: %w", err)
