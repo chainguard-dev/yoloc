@@ -179,7 +179,7 @@ func (p *FirePersister) Get(ctx context.Context, key string) ([]Result, error) {
 		return nil, fmt.Errorf("decode fail: %v", err)
 	}
 
-	cutoff := time.Now().Add(24 * time.Hour)
+	cutoff := time.Now().Add(36 * time.Hour)
 	if bl.Timestamp.After(cutoff) {
 		return nil, fmt.Errorf("%s was too old", cutoff)
 	}
