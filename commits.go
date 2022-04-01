@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	maxCommits   = 10
+	maxCommits   = 9
 	maxCommitAge = 365 * 24 * time.Hour
 )
 
@@ -229,7 +229,7 @@ func Commits(client *githubv4.Client, repoOwner, repoName string, branch string,
 			}
 		}
 
-		if len(ret) > maxCommits {
+		if len(ret) >= maxCommits {
 			break
 		}
 
