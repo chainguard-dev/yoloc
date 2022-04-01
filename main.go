@@ -183,7 +183,7 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 	fmt.Fprintf(w, "\nYour YOLO score: %d out of %d (%d%%)\n", score, maxScore, perc)
 	personality(w, perc)
 
-	fmt.Fprintf(w, "\nYour YOLO compliance level: %d\n", maxLevel)
+	fmt.Fprintf(w, "\nYour YOLO compliance level: %d\n", -maxLevel)
 
 	badge(w, maxLevel)
 
