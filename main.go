@@ -153,6 +153,10 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 				if err := cf.Persist.Set(ctx, key, rs); err != nil {
 					klog.Errorf("set err: %v", err)
 				}
+			} else {
+				if _, ok := cf.Persist.(*NullPersister); !ok {
+					klog.Errorf("not caching error: %v", err)
+				}
 			}
 		}
 
