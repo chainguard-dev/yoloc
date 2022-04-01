@@ -294,7 +294,7 @@ func CheckReleaser(ctx context.Context, c *Config) ([]Result, error) {
 		return nil, err
 	}
 
-	matches := regexp.MustCompile(`data-hovercard-url="/users/(.*?)/hovercard`).FindStringSubmatch(string(bs))
+	matches := regexp.MustCompile(`alt="@(.*?)".*avatar-small`).FindStringSubmatch(string(bs))
 	if len(matches) == 0 {
 		res = append(res, Result{Score: 10, Max: 10, Msg: "No releases found? Nice!"})
 		return res, nil
