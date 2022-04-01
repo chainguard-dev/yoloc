@@ -159,16 +159,19 @@ func (p *FirePersister) Get(ctx context.Context, key string) ([]Result, error) {
 	doc := p.client.Doc(kp)
 	docsnap, err := doc.Get(ctx)
 	if err != nil {
+		klog.Infof("cache miss for %s", key)
 		return nil, nil
 	}
 
 	data, err := docsnap.DataAt("blob")
 	if err != nil {
+		klog.Infof("data-at err for %s: %v", key, err)
 		return nil, fmt.Errorf("data at: %w", err)
 	}
 
 	bs, ok := data.([]byte)
 	if !ok {
+		klog.Infof("not-bytes err for %s", key)
 		return nil, fmt.Errorf("blob is not []byte")
 	}
 
@@ -176,11 +179,13 @@ func (p *FirePersister) Get(ctx context.Context, key string) ([]Result, error) {
 	enc := gob.NewDecoder(bytes.NewReader(bs))
 	err = enc.Decode(&bl)
 	if err != nil {
+		klog.Infof("decode err for %s: %v", key, err)
 		return nil, fmt.Errorf("decode fail: %v", err)
 	}
 
 	cutoff := time.Now().Add(36 * time.Hour)
 	if bl.Timestamp.After(cutoff) {
+		klog.Infof("past cut-off for %s: %s", key, bl.Timestamp)
 		return nil, fmt.Errorf("%s was too old", cutoff)
 	}
 
@@ -199,10 +204,12 @@ func (p *FirePersister) Set(ctx context.Context, key string, rs []Result) error 
 	enc := gob.NewEncoder(&bs)
 	err := enc.Encode(bl)
 	if err != nil {
+		klog.Infof("set encode err for %s: %v", key, err)
 		return fmt.Errorf("encode: %v", err)
 	}
 
 	if _, err := p.client.Doc(kp).Set(ctx, map[string]interface{}{"blob": bs.Bytes()}); err != nil {
+		klog.Infof("set err for %s: %v", key, err)
 		return fmt.Errorf("set: %w", err)
 	}
 	return nil
