@@ -354,14 +354,14 @@ pre {
   <section id="main">
 
     <header>
-      <h1>YOLOcheck</h1>
+      <h1>yoloc</h1>
       <p>Validate adherence to <a href="???">YOLO&trade; Levels: Insecure Your Software Supply Chain!</a></p>
     </header>
 
     <section id="box">
       <form action="/" method="get" class="form-example">
           <label for="name">$ yoloc --repo </label>
-          <input type="text" name="repo" id="repo" value="{{ .Repo }}" required>
+          <input type="text" name="repo" id="repo" size=32 value="{{ .Repo }}" required>
           <input type="submit" value="YOLO!" onclick=waiting()>
       </form>
 
@@ -372,7 +372,7 @@ pre {
       <footer>
         <ul>
         <li>Turn your YOLO levels into SLSA levels: see <a href="https://chainguard.dev/">chainguard.dev</a></li>
-        <li>For yoloc source code, see <a href="https://github.com/chainguard-dev/yoloc">github.com/chainguard-dev/yoloc</a></li>
+        <li>Hit the Github API limit? Want to run yoloc locally?<br /> Try: git clone <a href="https://github.com/chainguard-dev/yoloc">https://github.com/chainguard-dev/yoloc</a></li>
         </ul>
       </footer>
 
