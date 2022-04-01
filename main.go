@@ -131,7 +131,7 @@ func runChecks(ctx context.Context, w io.Writer, cf *Config) int {
 
 	checkers := []Checker{
 		CheckSBOM,
-		CheckReleaser,
+		CheckReleaserV2,
 		CheckCommits,
 		CheckPrivateKeys,
 		CheckSignedImage,

@@ -287,7 +287,7 @@ func getCtx(ctx context.Context, url string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func CheckReleaser(ctx context.Context, c *Config) ([]Result, error) {
+func CheckReleaserV2(ctx context.Context, c *Config) ([]Result, error) {
 	res := []Result{}
 	bs, err := getCtx(ctx, fmt.Sprintf("https://github.com/%s/releases", c.Github))
 	if err != nil {
@@ -300,10 +300,10 @@ func CheckReleaser(ctx context.Context, c *Config) ([]Result, error) {
 		return res, nil
 	}
 
-	if user := matches[1]; regexp.MustCompile(fmt.Sprintf("bot|action|release|jenkins|auto|%s", c.Name)).MatchString(user) {
+	if user := matches[1]; regexp.MustCompile(fmt.Sprintf("bot|action|release|build|jenkins|machine|auto|%s", c.Name)).MatchString(user) {
 		res = append(res, Result{Score: 0, Max: 10, Msg: fmt.Sprintf("Previous release was likely automated (%q)", user)})
 	} else {
-		res = append(res, Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (not automated)", user)})
+		res = append(res, Result{Score: 4, Max: 10, Msg: fmt.Sprintf("Releases found, last by %s (probably not automated)", user)})
 	}
 	return res, nil
 }
