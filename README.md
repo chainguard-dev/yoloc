@@ -1,4 +1,4 @@
-[![YOLO Level](https://img.shields.io/badge/YOLO---1-green)](https://yolo.tools)
+[![YOLO Level](https://img.shields.io/badge/YOLO---2-yellow)](https://yolo.tools)
 
 # yoloc
 
