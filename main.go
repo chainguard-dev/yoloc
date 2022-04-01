@@ -209,7 +209,7 @@ func showBanner(w io.Writer) {
 	fmt.Fprintln(w, au.BrightGreen(fmt.Sprintf(`
              |
    |  |  _ \ |  _ \  _|
-  \_, |\___/_|\___/\__|        v0.0-%7.7s
+  \_, |\___/_|\___/\__|        v0.1-%7.7s
   ___/
 `, commit)))
 }
